@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日本關西四國行程</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8fafc;
+            color: #1a202c;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2em;
+            color: #2d3748;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .header p {
+            color: #718096;
+            font-size: 1.1em;
+        }
+        
+        .timeline-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .timeline-header {
+            background: #4a5568;
+            color: white;
+            padding: 20px;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+        
+        .timeline {
+            padding: 0;
+        }
+        
+        .day-group {
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .day-group:last-child {
+            border-bottom: none;
+        }
+        
+        .day-header {
+            background: #f7fafc;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            font-weight: 600;
+            color: #2d3748;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .day-header:hover {
+            background: #edf2f7;
+        }
+        
+        .day-content {
+            padding: 0;
+        }
+        
+        .timeline-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .timeline-item:last-child {
+            border-bottom: none;
+        }
+        
+        .time-badge {
+            background: #e2e8f0;
+            color: #4a5568;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.875em;
+            font-weight: 500;
+            min-width: 100px;
+            text-align: center;
+        }
+        
+        .location-info {
+            flex: 1;
+        }
+        
+        .location-name {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 4px;
+        }
+        
+        .location-activity {
+            color: #718096;
+            font-size: 0.9em;
+        }
+        
+        .location-type {
+            width: 8px;
+            height: 40px;
+            border-radius: 4px;
+        }
+        
+        .type-airport { background: #805ad5; }
+        .type-transport { background: #38b2ac; }
+        .type-city { background: #4299e1; }
+        .type-attraction { background: #48bb78; }
+        .type-accommodation { background: #ed8936; }
+        .type-event { background: #e53e3e; }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .timeline-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .day-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>日本關西四國行程</h1>
+            <p>2025年11月22日 - 11月29日 (8天7夜)</p>
+        </div>
+        
+        <div class="timeline-section">
+            <div class="timeline-header">行程時間軸</div>
+            <div class="timeline">
+                
+                <!-- Day 1 -->
+                <div class="day-group">
+                    <div class="day-header">
+                        <span>11/22 (六) - 台北 → 大阪</span>
+                        <span>住宿: 大阪</span>
+                    </div>
+                    <div class="day-content">
+                        <div class="timeline-item">
+                            <div class="location-type type-airport"></div>
+                            <div class="time-badge">07:30</div>
+                            <div class="location-info">
+                                <div class="location-name">桃園國際機場</div>
+                                <div class="location-activity">辦理登機手續、免稅店</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="location-type type-transport"></div>
+                            <div class="time-badge">07:30-11:00</div>
+                            <div class="location-info">
+                                <div class="location-name">長榮航空 BR109</div>
+                                <div class="location-activity">飛行時間約2.5小時</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="location-type type-city"></div>
+                            <div class="time-badge">11:00-18:00</div>
+                            <div class="location-info">
+                                <div class="location-name">大阪</div>
+                                <div class="location-activity">關西機場→市區、心齋橋、道頓堀</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Day 2 -->
+                <div class="day-group">
+                    <div class="day-header">
+                        <span>11/23 (日) - 神戶一日遊</span>
+                        <span>住宿: 神戶</span>
+                    </div>
+                    <div class="day-content">
+                        <div class="timeline-item">
+                            <div class="location-type type-city"></div>
+                            <div class="time-badge">09:00-12:00</div>
+                            <div class="location-info">
+                                <div class="location-name">神戶港、北野異人館</div>
+                                <div class="location-activity">神戶港周邊、北野異人館街</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="location-type type-city"></div>
+                            <div class="time-badge">12:00-14:00</div>
+                            <div class="location-info">
+                                <div class="location-name">神戶牛午餐</div>
+                                <div class="location-activity">享用著名神戶牛料理</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="location-type type-attraction"></div>
+                            <div class="time-badge">14:00-18:00</div>
+                            <div class="location-info">
+                                <div class="location-name">有馬溫泉或神戶市區</div>
+                                <div class="location-activity">有馬溫泉半日遊或神戶市區購物</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Day 3 -->
+                <div class="day-group">
+                    <div class="day-header">
+                        <span>11/24 (一) - 神戶 → 小豆島</span>
+                        <span>住宿: 小豆島</span>
+                    </div>
+                    <div class="day-content">
+                        <div class="timeline-item">
+                            <div class="location-type type-accommodation"></div>
+                            <div class="time-badge">07:25</div>
+                            <div class="location-info">
+                                <div class="location-name">三宮出發</div>
+                                <div class="location-activity">神戶旅館退房，前往神戶港</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="location-type type-transport"></div>
+                            <div class="time-badge">08:15-11:35</div>
+                            <div class="location-info">
+                                <div class="location-name">神戶→小豆島高速船</div>
+                                <div class="location-activity">神戶機頭出發→坂手碼頭到着 (A班次，約3小時20分)</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="location-type type-attraction"></div>
+                            <div class="time-badge">12:16-19:00</div>
+                            <div class="location-info">
+                                <div class="location-name">小豆島</div>
+                                <div class="location-activity">坂手站→橄欖公園、醬油廠、瀨戶內海夕陽</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Day 4 -->
+                <div class="day-group">
+                    <div class="day-header">
+                        <span>11/25 (二) - 小豆島深度遊</span>
+                        <span>住宿: 小豆島</span>
+                    </div>
+                    <div class="day-content">
+                        <div class="timeline-item">
+                            <div class="location-type type-attraction"></div>
+                            <div class="time-badge">全日</div>
+                            <div class="location-info">
+                                <div class="location-name">小豆島深度遊</div>
+                                <div class="location-activity">寒霞溪紅葉、中山千枚田、二十四瞳映畫村</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Day 5 -->
+                <div class="day-group">
+                    <div class="day-header">
+                        <span>11/26 (三) - 小豆島 → 高松 → 松山</span>
+                        <span>住宿: 松山</span>
+                    </div>
+                    <div class="day-content">
+                        <div class="timeline-item">
+                            <div class="location-type type-accommodation"></div>
+                            <div class="time-badge">09:00-12:00</div>
+                            <div class="location-info">
+                                <div class="location-name">小豆島最後遊覽</div>
+                                <div class="location-activity">橄欖園、天使散步道、醬之鄉，旅館退房</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="location-type type-transport"></div>
+                            <div class="time-badge">12:20-13:20</div>
+                            <div class="location-info">
+                                <div class="location-name">小豆島→高松渡輪</div>
+                                <div class="location-activity">土庄港→高松港 (約1小時)</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="location-type type-transport"></div>
+                            <div class="time-badge">14:00-17:00</div>
+                            <div class="location-info">
+                                <div class="location-name">高松→松山</div>
+                                <div class="location-activity">JR或巴士前往松山 (約3小時)</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="location-type type-city"></div>
+                            <div class="time-badge">17:00-19:00</div>
+                            <div class="location-info">
+                                <div class="location-name">松山</div>
+                                <div class="location-activity">抵達松山、道後溫泉街</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Day 6 -->
+                <div class="day-group">
+                    <div class="day-header">
+                        <span>11/27 (四) - 松山 + 演唱會</span>
+                        <span>住宿: 松山</span>
+                    </div>
+                    <div class="day-content">
+                        <div class="timeline-item">
+                            <div class="location-type type-attraction"></div>
+                            <div class="time-badge">09:00-17:00</div>
+                            <div class="location-info">
+                                <div class="location-name">松山自由時間</div>
+                                <div class="location-activity">道後溫泉本館、松山城、石手寺</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="location-type type-event"></div>
+                            <div class="time-badge">18:00</div>
+                            <div class="location-info">
+                                <div class="location-name">演唱會</div>
+                                <div class="location-activity">演唱會欣賞</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Day 7 -->
+                <div class="day-group">
+                    <div class="day-header">
+                        <span>11/28 (五) - 下灘站海中鐵軌 + 青島</span>
+                        <span>住宿: 松山</span>
+                    </div>
+                    <div class="day-content">
+                        <div class="timeline-item">
+                            <div class="location-type type-transport"></div>
+                            <div class="time-badge">09:45-10:43</div>
+                            <div class="location-info">
+                                <div class="location-name">JR予讚線</div>
+                                <div class="location-activity">松山→下灘站</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="location-type type-attraction"></div>
+                            <div class="time-badge">10:43-12:29</div>
+                            <div class="location-info">
+                                <div class="location-name">下灘站</div>
+                                <div class="location-activity">神隱少女海中鐵軌拍攝地</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="location-type type-transport"></div>
+                            <div class="time-badge">12:29-12:44</div>
+                            <div class="location-info">
+                                <div class="location-name">JR予讚線</div>
+                                <div class="location-activity">下灘→伊予長濱</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="location-type type-transport"></div>
+                            <div class="time-badge">14:30-15:05</div>
+                            <div class="location-info">
+                                <div class="location-name">長濱港→青島</div>
+                                <div class="location-activity">搭船前往青島 (票價700日圓)</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="location-type type-attraction"></div>
+                            <div class="time-badge">15:05-16:15</div>
+                            <div class="location-info">
+                                <div class="location-name">青島</div>
+                                <div class="location-activity">青島探索</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="location-type type-transport"></div>
+                            <div class="time-badge">16:15-16:50</div>
+                            <div class="location-info">
+                                <div class="location-name">青島→長濱港</div>
+                                <div class="location-activity">返回長濱港</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="location-type type-transport"></div>
+                            <div class="time-badge">17:00-18:30</div>
+                            <div class="location-info">
+                                <div class="location-name">伊予長濱→松山</div>
+                                <div class="location-activity">JR返回松山市區</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="location-type type-attraction"></div>
+                            <div class="time-badge">19:00-21:00</div>
+                            <div class="location-info">
+                                <div class="location-name">道後溫泉</div>
+                                <div class="location-activity">道後溫泉本館泡湯、溫泉街散步、晚餐</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Day 8 -->
+                <div class="day-group">
+                    <div class="day-header">
+                        <span>11/29 (六) - 松山 → 台北</span>
+                        <span>返程</span>
+                    </div>
+                    <div class="day-content">
+                        <div class="timeline-item">
+                            <div class="location-type type-accommodation"></div>
+                            <div class="time-badge">09:00-10:00</div>
+                            <div class="location-info">
+                                <div class="location-name">松山</div>
+                                <div class="location-activity">旅館退房、前往機場</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="location-type type-transport"></div>
+                            <div class="time-badge">11:25-13:15</div>
+                            <div class="location-info">
+                                <div class="location-name">長榮航空 BR109</div>
+                                <div class="location-activity">飛行時間約1小時50分</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="location-type type-airport"></div>
+                            <div class="time-badge">13:15</div>
+                            <div class="location-info">
+                                <div class="location-name">桃園機場</div>
+                                <div class="location-activity">返回台北，行程結束</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 摺疊功能
+        document.querySelectorAll('.day-header').forEach(header => {
+            header.addEventListener('click', () => {
+                const content = header.nextElementSibling;
+                const isOpen = content.style.display !== 'none';
+                content.style.display = isOpen ? 'none' : 'block';
+            });
+        });
+    </script>
+</body>
+</html>
