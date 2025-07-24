@@ -103,7 +103,7 @@ async function saveItineraryToDb(itineraryData) {
             { days: itineraryData.days }
         ];
         
-        await pool.query(query);
+		await pool.query(query, values);  // ✅ 添加 values 參數
         console.log('✅ 資料已儲存到資料庫');
         return true;
     } catch (error) {
