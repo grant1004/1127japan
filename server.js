@@ -191,8 +191,10 @@ async function updateItineraryInDb(itineraryData) {
             updatedAt: new Date().toISOString()
         });
         
-        await client.query('NOTIFY itinerary_changes, $1', [notifyPayload]);
-        
+        // 使用字符串連接而非參數化查詢
+        const notifyQuery = `NOTIFY itinerary_changes, '${notifyPayload.replace(/'/g, "''")}'`;
+        await client.query(notifyQuery);
+		
         await client.query('COMMIT');
         console.log('✅ 資料已更新並發送通知');
         
