@@ -1,15 +1,25 @@
 {
   "name": "japan-itinerary",
   "version": "1.0.0",
-  "description": "Japan Kansai Shikoku Travel Itinerary",
+  "description": "Japan Kansai Shikoku Travel Itinerary with Online Editing",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2"
   },
   "engines": {
     "node": ">=14.0.0"
-  }
+  },
+  "keywords": [
+    "travel",
+    "itinerary",
+    "japan",
+    "express",
+    "web-app"
+  ],
+  "author": "",
+  "license": "MIT"
 }

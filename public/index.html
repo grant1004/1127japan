@@ -31,6 +31,7 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             margin-bottom: 20px;
             text-align: center;
+            position: relative;
         }
         
         .header h1 {
@@ -43,6 +44,76 @@
         .header p {
             color: #718096;
             font-size: 1.1em;
+        }
+        
+        .edit-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: #4299e1;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #3182ce;
+        }
+        
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #38a169;
+        }
+        
+        .btn-danger {
+            background: #e53e3e;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c53030;
+        }
+        
+        .btn-small {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+        
+        .status-indicator {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-saved {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .status-saving {
+            background: #fbb6ce;
+            color: #702459;
         }
         
         .timeline-section {
@@ -98,6 +169,7 @@
             display: flex;
             align-items: center;
             gap: 15px;
+            position: relative;
         }
         
         .timeline-item:last-child {
@@ -143,6 +215,65 @@
         .type-accommodation { background: #ed8936; }
         .type-event { background: #e53e3e; }
         
+        .item-controls {
+            opacity: 0;
+            transition: opacity 0.2s;
+            display: flex;
+            gap: 5px;
+        }
+        
+        .timeline-item:hover .item-controls {
+            opacity: 1;
+        }
+        
+        .edit-mode .item-controls {
+            opacity: 1;
+        }
+        
+        .editable {
+            background: transparent;
+            border: none;
+            font-family: inherit;
+            font-size: inherit;
+            color: inherit;
+            width: 100%;
+            padding: 2px 4px;
+            border-radius: 3px;
+            transition: background 0.2s;
+        }
+        
+        .editable:focus {
+            outline: none;
+            background: #f7fafc;
+            border: 1px solid #4299e1;
+        }
+        
+        .add-item-btn {
+            width: 100%;
+            background: #f7fafc;
+            border: 2px dashed #cbd5e0;
+            color: #718096;
+            padding: 15px;
+            cursor: pointer;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .add-item-btn:hover {
+            background: #edf2f7;
+            border-color: #a0aec0;
+        }
+        
+        .type-select {
+            padding: 4px 8px;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+            font-size: 12px;
+            background: white;
+        }
+        
         @media (max-width: 768px) {
             .container {
                 padding: 10px;
@@ -159,327 +290,316 @@
                 align-items: flex-start;
                 gap: 5px;
             }
+            
+            .edit-controls {
+                position: static;
+                justify-content: center;
+                margin-top: 20px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>日本關西四國行程</h1>
-            <p>2025年11月22日 - 11月29日 (8天7夜)</p>
+            <div class="status-indicator" id="statusIndicator">已儲存</div>
+            <div class="edit-controls">
+                <button class="btn btn-primary" id="editBtn" onclick="toggleEditMode()">編輯模式</button>
+                <button class="btn btn-success" id="saveBtn" onclick="saveItinerary()" style="display: none;">儲存</button>
+                <button class="btn btn-danger" id="cancelBtn" onclick="cancelEdit()" style="display: none;">取消</button>
+            </div>
+            <h1 id="title">日本關西四國行程</h1>
+            <p id="subtitle">2025年11月22日 - 11月29日 (8天7夜)</p>
         </div>
         
         <div class="timeline-section">
             <div class="timeline-header">行程時間軸</div>
-            <div class="timeline">
-                
-                <!-- Day 1 -->
-                <div class="day-group">
-                    <div class="day-header">
-                        <span>11/22 (六) - 台北 → 大阪</span>
-                        <span>住宿: 大阪</span>
-                    </div>
-                    <div class="day-content">
-                        <div class="timeline-item">
-                            <div class="location-type type-airport"></div>
-                            <div class="time-badge">07:30</div>
-                            <div class="location-info">
-                                <div class="location-name">桃園國際機場</div>
-                                <div class="location-activity">辦理登機手續、免稅店</div>
-                            </div>
-                        </div>
-                        <div class="timeline-item">
-                            <div class="location-type type-transport"></div>
-                            <div class="time-badge">07:30-11:00</div>
-                            <div class="location-info">
-                                <div class="location-name">長榮航空 BR109</div>
-                                <div class="location-activity">飛行時間約2.5小時</div>
-                            </div>
-                        </div>
-                        <div class="timeline-item">
-                            <div class="location-type type-city"></div>
-                            <div class="time-badge">11:00-18:00</div>
-                            <div class="location-info">
-                                <div class="location-name">大阪</div>
-                                <div class="location-activity">關西機場→市區、心齋橋、道頓堀</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Day 2 -->
-                <div class="day-group">
-                    <div class="day-header">
-                        <span>11/23 (日) - 神戶一日遊</span>
-                        <span>住宿: 神戶</span>
-                    </div>
-                    <div class="day-content">
-                        <div class="timeline-item">
-                            <div class="location-type type-city"></div>
-                            <div class="time-badge">09:00-12:00</div>
-                            <div class="location-info">
-                                <div class="location-name">神戶港、北野異人館</div>
-                                <div class="location-activity">神戶港周邊、北野異人館街</div>
-                            </div>
-                        </div>
-                        <div class="timeline-item">
-                            <div class="location-type type-city"></div>
-                            <div class="time-badge">12:00-14:00</div>
-                            <div class="location-info">
-                                <div class="location-name">神戶牛午餐</div>
-                                <div class="location-activity">享用著名神戶牛料理</div>
-                            </div>
-                        </div>
-                        <div class="timeline-item">
-                            <div class="location-type type-attraction"></div>
-                            <div class="time-badge">14:00-18:00</div>
-                            <div class="location-info">
-                                <div class="location-name">有馬溫泉或神戶市區</div>
-                                <div class="location-activity">有馬溫泉半日遊或神戶市區購物</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Day 3 -->
-                <div class="day-group">
-                    <div class="day-header">
-                        <span>11/24 (一) - 神戶 → 小豆島</span>
-                        <span>住宿: 小豆島</span>
-                    </div>
-                    <div class="day-content">
-                        <div class="timeline-item">
-                            <div class="location-type type-accommodation"></div>
-                            <div class="time-badge">07:25</div>
-                            <div class="location-info">
-                                <div class="location-name">三宮出發</div>
-                                <div class="location-activity">神戶旅館退房，前往神戶港</div>
-                            </div>
-                        </div>
-                        <div class="timeline-item">
-                            <div class="location-type type-transport"></div>
-                            <div class="time-badge">08:15-11:35</div>
-                            <div class="location-info">
-                                <div class="location-name">神戶→小豆島高速船</div>
-                                <div class="location-activity">神戶機頭出發→坂手碼頭到着 (A班次，約3小時20分)</div>
-                            </div>
-                        </div>
-                        <div class="timeline-item">
-                            <div class="location-type type-attraction"></div>
-                            <div class="time-badge">12:16-19:00</div>
-                            <div class="location-info">
-                                <div class="location-name">小豆島</div>
-                                <div class="location-activity">坂手站→橄欖公園、醬油廠、瀨戶內海夕陽</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Day 4 -->
-                <div class="day-group">
-                    <div class="day-header">
-                        <span>11/25 (二) - 小豆島深度遊</span>
-                        <span>住宿: 小豆島</span>
-                    </div>
-                    <div class="day-content">
-                        <div class="timeline-item">
-                            <div class="location-type type-attraction"></div>
-                            <div class="time-badge">全日</div>
-                            <div class="location-info">
-                                <div class="location-name">小豆島深度遊</div>
-                                <div class="location-activity">寒霞溪紅葉、中山千枚田、二十四瞳映畫村</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Day 5 -->
-                <div class="day-group">
-                    <div class="day-header">
-                        <span>11/26 (三) - 小豆島 → 高松 → 松山</span>
-                        <span>住宿: 松山</span>
-                    </div>
-                    <div class="day-content">
-                        <div class="timeline-item">
-                            <div class="location-type type-accommodation"></div>
-                            <div class="time-badge">09:00-12:00</div>
-                            <div class="location-info">
-                                <div class="location-name">小豆島最後遊覽</div>
-                                <div class="location-activity">橄欖園、天使散步道、醬之鄉，旅館退房</div>
-                            </div>
-                        </div>
-                        <div class="timeline-item">
-                            <div class="location-type type-transport"></div>
-                            <div class="time-badge">12:20-13:20</div>
-                            <div class="location-info">
-                                <div class="location-name">小豆島→高松渡輪</div>
-                                <div class="location-activity">土庄港→高松港 (約1小時)</div>
-                            </div>
-                        </div>
-                        <div class="timeline-item">
-                            <div class="location-type type-transport"></div>
-                            <div class="time-badge">14:00-17:00</div>
-                            <div class="location-info">
-                                <div class="location-name">高松→松山</div>
-                                <div class="location-activity">JR或巴士前往松山 (約3小時)</div>
-                            </div>
-                        </div>
-                        <div class="timeline-item">
-                            <div class="location-type type-city"></div>
-                            <div class="time-badge">17:00-19:00</div>
-                            <div class="location-info">
-                                <div class="location-name">松山</div>
-                                <div class="location-activity">抵達松山、道後溫泉街</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Day 6 -->
-                <div class="day-group">
-                    <div class="day-header">
-                        <span>11/27 (四) - 松山 + 演唱會</span>
-                        <span>住宿: 松山</span>
-                    </div>
-                    <div class="day-content">
-                        <div class="timeline-item">
-                            <div class="location-type type-attraction"></div>
-                            <div class="time-badge">09:00-17:00</div>
-                            <div class="location-info">
-                                <div class="location-name">松山自由時間</div>
-                                <div class="location-activity">道後溫泉本館、松山城、石手寺</div>
-                            </div>
-                        </div>
-                        <div class="timeline-item">
-                            <div class="location-type type-event"></div>
-                            <div class="time-badge">18:00</div>
-                            <div class="location-info">
-                                <div class="location-name">演唱會</div>
-                                <div class="location-activity">演唱會欣賞</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Day 7 -->
-                <div class="day-group">
-                    <div class="day-header">
-                        <span>11/28 (五) - 下灘站海中鐵軌 + 青島</span>
-                        <span>住宿: 松山</span>
-                    </div>
-                    <div class="day-content">
-                        <div class="timeline-item">
-                            <div class="location-type type-transport"></div>
-                            <div class="time-badge">09:45-10:43</div>
-                            <div class="location-info">
-                                <div class="location-name">JR予讚線</div>
-                                <div class="location-activity">松山→下灘站</div>
-                            </div>
-                        </div>
-                        <div class="timeline-item">
-                            <div class="location-type type-attraction"></div>
-                            <div class="time-badge">10:43-12:29</div>
-                            <div class="location-info">
-                                <div class="location-name">下灘站</div>
-                                <div class="location-activity">神隱少女海中鐵軌拍攝地</div>
-                            </div>
-                        </div>
-                        <div class="timeline-item">
-                            <div class="location-type type-transport"></div>
-                            <div class="time-badge">12:29-12:44</div>
-                            <div class="location-info">
-                                <div class="location-name">JR予讚線</div>
-                                <div class="location-activity">下灘→伊予長濱</div>
-                            </div>
-                        </div>
-                        <div class="timeline-item">
-                            <div class="location-type type-transport"></div>
-                            <div class="time-badge">14:30-15:05</div>
-                            <div class="location-info">
-                                <div class="location-name">長濱港→青島</div>
-                                <div class="location-activity">搭船前往青島 (票價700日圓)</div>
-                            </div>
-                        </div>
-                        <div class="timeline-item">
-                            <div class="location-type type-attraction"></div>
-                            <div class="time-badge">15:05-16:15</div>
-                            <div class="location-info">
-                                <div class="location-name">青島</div>
-                                <div class="location-activity">青島探索</div>
-                            </div>
-                        </div>
-                        <div class="timeline-item">
-                            <div class="location-type type-transport"></div>
-                            <div class="time-badge">16:15-16:50</div>
-                            <div class="location-info">
-                                <div class="location-name">青島→長濱港</div>
-                                <div class="location-activity">返回長濱港</div>
-                            </div>
-                        </div>
-                        <div class="timeline-item">
-                            <div class="location-type type-transport"></div>
-                            <div class="time-badge">17:00-18:30</div>
-                            <div class="location-info">
-                                <div class="location-name">伊予長濱→松山</div>
-                                <div class="location-activity">JR返回松山市區</div>
-                            </div>
-                        </div>
-                        <div class="timeline-item">
-                            <div class="location-type type-attraction"></div>
-                            <div class="time-badge">19:00-21:00</div>
-                            <div class="location-info">
-                                <div class="location-name">道後溫泉</div>
-                                <div class="location-activity">道後溫泉本館泡湯、溫泉街散步、晚餐</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Day 8 -->
-                <div class="day-group">
-                    <div class="day-header">
-                        <span>11/29 (六) - 松山 → 台北</span>
-                        <span>返程</span>
-                    </div>
-                    <div class="day-content">
-                        <div class="timeline-item">
-                            <div class="location-type type-accommodation"></div>
-                            <div class="time-badge">09:00-10:00</div>
-                            <div class="location-info">
-                                <div class="location-name">松山</div>
-                                <div class="location-activity">旅館退房、前往機場</div>
-                            </div>
-                        </div>
-                        <div class="timeline-item">
-                            <div class="location-type type-transport"></div>
-                            <div class="time-badge">11:25-13:15</div>
-                            <div class="location-info">
-                                <div class="location-name">長榮航空 BR109</div>
-                                <div class="location-activity">飛行時間約1小時50分</div>
-                            </div>
-                        </div>
-                        <div class="timeline-item">
-                            <div class="location-type type-airport"></div>
-                            <div class="time-badge">13:15</div>
-                            <div class="location-info">
-                                <div class="location-name">桃園機場</div>
-                                <div class="location-activity">返回台北，行程結束</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="timeline" id="timeline">
+                <!-- 動態載入內容 -->
             </div>
         </div>
     </div>
 
     <script>
-        // 摺疊功能
-        document.querySelectorAll('.day-header').forEach(header => {
-            header.addEventListener('click', () => {
-                const content = header.nextElementSibling;
-                const isOpen = content.style.display !== 'none';
-                content.style.display = isOpen ? 'none' : 'block';
+        let currentItinerary = null;
+        let isEditMode = false;
+        let originalItinerary = null;
+
+        // 載入行程資料
+        async function loadItinerary() {
+            try {
+                setStatus('loading', '載入中...');
+                const response = await fetch('/api/itinerary');
+                if (!response.ok) throw new Error('載入失敗');
+                
+                currentItinerary = await response.json();
+                renderItinerary();
+                setStatus('saved', '已儲存');
+            } catch (error) {
+                console.error('載入行程失敗:', error);
+                setStatus('error', '載入失敗');
+            }
+        }
+
+        // 儲存行程資料
+        async function saveItinerary() {
+            try {
+                setStatus('saving', '儲存中...');
+                
+                // 收集編輯的資料
+                collectEditedData();
+                
+                const response = await fetch('/api/itinerary', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(currentItinerary)
+                });
+                
+                if (!response.ok) throw new Error('儲存失敗');
+                
+                setStatus('saved', '已儲存');
+                exitEditMode();
+            } catch (error) {
+                console.error('儲存失敗:', error);
+                setStatus('error', '儲存失敗');
+            }
+        }
+
+        // 設定狀態指示器
+        function setStatus(type, message) {
+            const indicator = document.getElementById('statusIndicator');
+            indicator.textContent = message;
+            indicator.className = 'status-indicator';
+            
+            if (type === 'saved') {
+                indicator.classList.add('status-saved');
+            } else if (type === 'saving' || type === 'loading') {
+                indicator.classList.add('status-saving');
+            }
+        }
+
+        // 切換編輯模式
+        function toggleEditMode() {
+            if (!isEditMode) {
+                enterEditMode();
+            } else {
+                exitEditMode();
+            }
+        }
+
+        // 進入編輯模式
+        function enterEditMode() {
+            isEditMode = true;
+            originalItinerary = JSON.parse(JSON.stringify(currentItinerary));
+            
+            document.body.classList.add('edit-mode');
+            document.getElementById('editBtn').style.display = 'none';
+            document.getElementById('saveBtn').style.display = 'inline-block';
+            document.getElementById('cancelBtn').style.display = 'inline-block';
+            
+            makeEditable();
+        }
+
+        // 退出編輯模式
+        function exitEditMode() {
+            isEditMode = false;
+            
+            document.body.classList.remove('edit-mode');
+            document.getElementById('editBtn').style.display = 'inline-block';
+            document.getElementById('saveBtn').style.display = 'none';
+            document.getElementById('cancelBtn').style.display = 'none';
+            
+            renderItinerary();
+        }
+
+        // 取消編輯
+        function cancelEdit() {
+            currentItinerary = originalItinerary;
+            exitEditMode();
+        }
+
+        // 讓元素可編輯
+        function makeEditable() {
+            // 標題可編輯
+            const title = document.getElementById('title');
+            const subtitle = document.getElementById('subtitle');
+            
+            title.contentEditable = true;
+            subtitle.contentEditable = true;
+            title.classList.add('editable');
+            subtitle.classList.add('editable');
+        }
+
+        // 收集編輯的資料
+        function collectEditedData() {
+            // 更新標題
+            currentItinerary.title = document.getElementById('title').textContent;
+            currentItinerary.subtitle = document.getElementById('subtitle').textContent;
+            
+            // 更新各個項目的資料
+            currentItinerary.days.forEach(day => {
+                day.items.forEach(item => {
+                    const timeEl = document.querySelector(`[data-item-id="${item.id}"] .time-badge`);
+                    const nameEl = document.querySelector(`[data-item-id="${item.id}"] .location-name`);
+                    const activityEl = document.querySelector(`[data-item-id="${item.id}"] .location-activity`);
+                    const typeEl = document.querySelector(`[data-item-id="${item.id}"] .type-select`);
+                    
+                    if (timeEl) item.time = timeEl.textContent || timeEl.value;
+                    if (nameEl) item.name = nameEl.textContent || nameEl.value;
+                    if (activityEl) item.activity = activityEl.textContent || activityEl.value;
+                    if (typeEl) item.type = typeEl.value;
+                });
             });
+        }
+
+        // 渲染行程
+        function renderItinerary() {
+            if (!currentItinerary) return;
+            
+            const timeline = document.getElementById('timeline');
+            const title = document.getElementById('title');
+            const subtitle = document.getElementById('subtitle');
+            
+            title.textContent = currentItinerary.title;
+            subtitle.textContent = currentItinerary.subtitle;
+            
+            timeline.innerHTML = currentItinerary.days.map(day => `
+                <div class="day-group">
+                    <div class="day-header" onclick="toggleDay('${day.id}')">
+                        <span>${day.date} - ${day.title}</span>
+                        <span>住宿: ${day.accommodation}</span>
+                    </div>
+                    <div class="day-content" id="content-${day.id}">
+                        ${day.items.map(item => renderTimelineItem(item)).join('')}
+                        ${isEditMode ? `<button class="add-item-btn" onclick="addNewItem('${day.id}')">+ 新增行程項目</button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+            
+            if (isEditMode) {
+                makeEditable();
+                addEditableListeners();
+            }
+        }
+
+        // 渲染時間軸項目
+        function renderTimelineItem(item) {
+            const typeClass = `type-${item.type}`;
+            
+            if (isEditMode) {
+                return `
+                    <div class="timeline-item" data-item-id="${item.id}">
+                        <div class="location-type ${typeClass}"></div>
+                        <div class="time-badge editable" contenteditable="true">${item.time}</div>
+                        <div class="location-info">
+                            <div class="location-name editable" contenteditable="true">${item.name}</div>
+                            <div class="location-activity editable" contenteditable="true">${item.activity}</div>
+                        </div>
+                        <select class="type-select">
+                            <option value="airport" ${item.type === 'airport' ? 'selected' : ''}>機場</option>
+                            <option value="transport" ${item.type === 'transport' ? 'selected' : ''}>交通</option>
+                            <option value="city" ${item.type === 'city' ? 'selected' : ''}>城市</option>
+                            <option value="attraction" ${item.type === 'attraction' ? 'selected' : ''}>景點</option>
+                            <option value="accommodation" ${item.type === 'accommodation' ? 'selected' : ''}>住宿</option>
+                            <option value="event" ${item.type === 'event' ? 'selected' : ''}>活動</option>
+                        </select>
+                        <div class="item-controls">
+                            <button class="btn btn-danger btn-small" onclick="deleteItem('${item.id}')">刪除</button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="timeline-item" data-item-id="${item.id}">
+                        <div class="location-type ${typeClass}"></div>
+                        <div class="time-badge">${item.time}</div>
+                        <div class="location-info">
+                            <div class="location-name">${item.name}</div>
+                            <div class="location-activity">${item.activity}</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // 新增項目
+        function addNewItem(dayId) {
+            const newItem = {
+                id: `item${Date.now()}`,
+                type: 'attraction',
+                time: '00:00',
+                name: '新景點',
+                activity: '請編輯活動內容'
+            };
+            
+            const day = currentItinerary.days.find(d => d.id === dayId);
+            if (day) {
+                day.items.push(newItem);
+                renderItinerary();
+            }
+        }
+
+        // 刪除項目
+        function deleteItem(itemId) {
+            if (confirm('確定要刪除這個項目嗎？')) {
+                currentItinerary.days.forEach(day => {
+                    day.items = day.items.filter(item => item.id !== itemId);
+                });
+                renderItinerary();
+            }
+        }
+
+        // 切換日期顯示
+        function toggleDay(dayId) {
+            const content = document.getElementById(`content-${dayId}`);
+            const isOpen = content.style.display !== 'none';
+            content.style.display = isOpen ? 'none' : 'block';
+        }
+
+        // 添加編輯監聽器
+        function addEditableListeners() {
+            // 類型選擇器變更事件
+            document.querySelectorAll('.type-select').forEach(select => {
+                select.addEventListener('change', function() {
+                    const item = this.closest('.timeline-item');
+                    const colorDiv = item.querySelector('.location-type');
+                    colorDiv.className = `location-type type-${this.value}`;
+                });
+            });
+        }
+
+        // 自動儲存功能
+        function setupAutoSave() {
+            if (isEditMode) {
+                setTimeout(() => {
+                    if (isEditMode) {
+                        saveItinerary();
+                        setTimeout(setupAutoSave, 30000); // 30秒後再次檢查
+                    }
+                }, 30000);
+            }
+        }
+
+        // 頁面載入時初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadItinerary();
+        });
+
+        // 鍵盤快捷鍵
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 's') {
+                    e.preventDefault();
+                    if (isEditMode) {
+                        saveItinerary();
+                    }
+                } else if (e.key === 'e') {
+                    e.preventDefault();
+                    toggleEditMode();
+                }
+            }
         });
     </script>
 </body>
