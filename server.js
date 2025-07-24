@@ -1,8 +1,56 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs').promises;
+const { Pool } = require('pg');
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// PostgreSQL 連接設定
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production' ? {
+        rejectUnauthorized: false
+    } : false
+});
+
+// 測試資料庫連接
+pool.on('connect', () => {
+    console.log('✅ 已連接到 PostgreSQL 資料庫');
+});
+
+pool.on('error', (err) => {
+    console.error('❌ PostgreSQL 連接錯誤:', err);
+});
+
+
+// 初始化資料庫
+async function initializeDatabase() {
+    try {
+        const createTableQuery = `
+            CREATE TABLE IF NOT EXISTS itinerary (
+                id SERIAL PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
+                subtitle VARCHAR(255),
+                data JSONB NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `;
+        
+        await pool.query(createTableQuery);
+        console.log('✅ 資料表已就緒');
+        
+        // 檢查是否有資料，沒有則插入預設資料
+        const checkData = await pool.query('SELECT COUNT(*) FROM itinerary');
+        if (parseInt(checkData.rows[0].count) === 0) {
+            const defaultData = getDefaultItinerary();
+            await saveItineraryToDb(defaultData);
+            console.log('✅ 已插入預設行程資料');
+        }
+    } catch (error) {
+        console.error('❌ 資料庫初始化失敗:', error);
+    }
+}
 
 // 中介軟體
 app.use(express.static('public'));
@@ -19,22 +67,79 @@ async function ensureDataDir() {
         await fs.mkdir(path.join(__dirname, 'data'));
     }
 }
-
-// 讀取行程資料
-async function loadItinerary() {
+// 從資料庫讀取行程資料
+async function loadItineraryFromDb() {
     try {
-        const data = await fs.readFile(DATA_FILE, 'utf8');
-        return JSON.parse(data);
+        const query = 'SELECT * FROM itinerary ORDER BY updated_at DESC LIMIT 1';
+        const result = await pool.query(query);
+        
+        if (result.rows.length === 0) {
+            return getDefaultItinerary();
+        }
+        
+        const row = result.rows[0];
+        return {
+            title: row.title,
+            subtitle: row.subtitle,
+            days: row.data.days
+        };
     } catch (error) {
-        // 如果文件不存在，返回預設資料
+        console.error('從資料庫讀取失敗:', error);
         return getDefaultItinerary();
     }
 }
 
-// 儲存行程資料
-async function saveItinerary(data) {
-    await ensureDataDir();
-    await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
+// 儲存行程資料到資料庫
+async function saveItineraryToDb(itineraryData) {
+    try {
+        const query = `
+            INSERT INTO itinerary (title, subtitle, data, updated_at)
+            VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+        `;
+        
+        const values = [
+            itineraryData.title,
+            itineraryData.subtitle,
+            { days: itineraryData.days }
+        ];
+        
+        await pool.query(query);
+        console.log('✅ 資料已儲存到資料庫');
+        return true;
+    } catch (error) {
+        console.error('儲存到資料庫失敗:', error);
+        throw error;
+    }
+}
+
+// 更新現有資料（更有效率的方式）
+async function updateItineraryInDb(itineraryData) {
+    try {
+        const query = `
+            UPDATE itinerary 
+            SET title = $1, subtitle = $2, data = $3, updated_at = CURRENT_TIMESTAMP
+            WHERE id = (SELECT id FROM itinerary ORDER BY updated_at DESC LIMIT 1)
+        `;
+        
+        const values = [
+            itineraryData.title,
+            itineraryData.subtitle,
+            { days: itineraryData.days }
+        ];
+        
+        const result = await pool.query(query, values);
+        
+        if (result.rowCount === 0) {
+            // 如果沒有更新到任何資料，就插入新的
+            return await saveItineraryToDb(itineraryData);
+        }
+        
+        console.log('✅ 資料已更新到資料庫');
+        return true;
+    } catch (error) {
+        console.error('更新資料庫失敗:', error);
+        throw error;
+    }
 }
 
 // 預設行程資料
@@ -305,7 +410,7 @@ function getDefaultItinerary() {
 // 獲取行程資料
 app.get('/api/itinerary', async (req, res) => {
     try {
-        const itinerary = await loadItinerary();
+        const itinerary = await loadItineraryFromDb();
         res.json(itinerary);
     } catch (error) {
         console.error('讀取行程資料失敗:', error);
@@ -317,21 +422,21 @@ app.get('/api/itinerary', async (req, res) => {
 app.post('/api/itinerary', async (req, res) => {
     try {
         const itinerary = req.body;
-        await saveItinerary(itinerary);
-        res.json({ success: true, message: '行程已成功儲存' });
+        await updateItineraryInDb(itinerary);
+        res.json({ success: true, message: '行程已成功儲存到資料庫' });
     } catch (error) {
         console.error('儲存行程資料失敗:', error);
         res.status(500).json({ error: '儲存行程資料失敗' });
     }
 });
 
-// 更新單一行程項目
+// 其他 API 路由也需要修改...
 app.put('/api/itinerary/item/:dayId/:itemId', async (req, res) => {
     try {
         const { dayId, itemId } = req.params;
         const updatedItem = req.body;
         
-        const itinerary = await loadItinerary();
+        const itinerary = await loadItineraryFromDb();
         const day = itinerary.days.find(d => d.id === dayId);
         
         if (!day) {
@@ -345,7 +450,7 @@ app.put('/api/itinerary/item/:dayId/:itemId', async (req, res) => {
         
         day.items[itemIndex] = { ...day.items[itemIndex], ...updatedItem };
         
-        await saveItinerary(itinerary);
+        await updateItineraryInDb(itinerary);
         res.json({ success: true, message: '項目已更新' });
     } catch (error) {
         console.error('更新項目失敗:', error);
@@ -412,6 +517,15 @@ app.get('/', (req, res) => {
 
 // 啟動伺服器
 app.listen(PORT, async () => {
-    await ensureDataDir();
-    console.log(`伺服器運行在 http://localhost:${PORT}`);
+    console.log(`🚀 伺服器運行在 http://localhost:${PORT}`);
+    
+    // 初始化資料庫
+    await initializeDatabase();
+});
+
+// 優雅關閉
+process.on('SIGINT', async () => {
+    console.log('正在關閉伺服器...');
+    await pool.end();
+    process.exit(0);
 });

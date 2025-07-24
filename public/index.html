@@ -45,6 +45,23 @@
             color: #718096;
             font-size: 1.1em;
         }
+		
+		.day-header::before {
+			content: '';                    /* 空內容，用來畫三角形 */
+			width: 0;                      /* 寬度為0 */
+			height: 0;                     /* 高度為0 */
+			border-left: 6px solid #718096;  /* 左邊框就是三角形的顏色部分 */
+			border-top: 4px solid transparent;    /* 上下邊框透明，形成三角形 */
+			border-bottom: 4px solid transparent;
+			margin-right: 10px;            /* 與文字的間距 */
+			transition: transform 0.2s ease;  /* 旋轉動畫效果 */
+			transform: rotate(90deg);       /* 默認向下（90度旋轉） */
+		}
+
+		/* 收合狀態的三角形樣式 */
+		.day-header.collapsed::before {
+			transform: rotate(0deg);        /* 收合時向右（0度） */
+		}
         
         .edit-controls {
             position: absolute;
@@ -176,6 +193,13 @@
             border-bottom: none;
         }
         
+        /* 修復後的時間區域 - 比例1 */
+        .time-section {
+            flex: 1;
+            min-width: 100px;
+            max-width: 120px;
+        }
+        
         .time-badge {
             background: #e2e8f0;
             color: #4a5568;
@@ -183,18 +207,46 @@
             border-radius: 20px;
             font-size: 0.875em;
             font-weight: 500;
-            min-width: 100px;
             text-align: center;
+            width: 100%;
         }
         
-        .location-info {
+        /* 編輯模式的時間輸入框 */
+        .time-input {
+            background: #e2e8f0;
+            color: #4a5568;
+            padding: 6px 8px;
+            border-radius: 20px;
+            font-size: 0.875em;
+            font-weight: 500;
+            text-align: center;
+            width: 100%;
+            border: 1px solid transparent;
+            font-family: inherit;
+        }
+        
+        .time-input:focus {
+            outline: none;
+            border-color: #4299e1;
+            background: #fff;
+            box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.1);
+        }
+        
+        /* 地點區域 - 比例1 */
+        .location-section {
             flex: 1;
+            min-width: 120px;
         }
         
         .location-name {
             font-weight: 600;
             color: #2d3748;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
+        }
+        
+        /* 活動內容區域 - 比例5 */
+        .activity-section {
+            flex: 5;
         }
         
         .location-activity {
@@ -206,6 +258,7 @@
             width: 8px;
             height: 40px;
             border-radius: 4px;
+            flex-shrink: 0;
         }
         
         .type-airport { background: #805ad5; }
@@ -220,6 +273,7 @@
             transition: opacity 0.2s;
             display: flex;
             gap: 5px;
+            flex-shrink: 0;
         }
         
         .timeline-item:hover .item-controls {
@@ -230,22 +284,33 @@
             opacity: 1;
         }
         
+        /* 統一的可編輯樣式 */
         .editable {
             background: transparent;
-            border: none;
+            border: 1px solid transparent;
             font-family: inherit;
             font-size: inherit;
             color: inherit;
             width: 100%;
-            padding: 2px 4px;
-            border-radius: 3px;
-            transition: background 0.2s;
+            padding: 4px 6px;
+            border-radius: 4px;
+            transition: all 0.2s;
         }
         
         .editable:focus {
             outline: none;
-            background: #f7fafc;
-            border: 1px solid #4299e1;
+            background: #fff;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.1);
+        }
+        
+        /* 標題區域的特殊處理 */
+        .header .editable {
+            width: auto;
+            display: inline-block;
+            text-align: center;
+            min-width: 200px;
+            padding: 2px 8px;
         }
         
         .add-item-btn {
@@ -272,6 +337,7 @@
             border-radius: 4px;
             font-size: 12px;
             background: white;
+            margin-left: 10px;
         }
         
         @media (max-width: 768px) {
@@ -284,6 +350,27 @@
                 align-items: flex-start;
                 gap: 10px;
             }
+            
+            .time-section,
+            .location-section,
+            .activity-section {
+                flex: 1;
+                width: 100%;
+                max-width: none;
+            }
+			
+			/* 手機版三角形位置調整 */
+			.day-header::before {
+				position: absolute;             /* 改為絕對定位 */
+				right: 20px;                   /* 放到右側 */
+				top: 50%;                      /* 垂直置中 */
+				transform: translateY(-50%) rotate(90deg);  /* 置中+旋轉 */
+				margin-right: 0;               /* 移除右邊距 */
+			}
+
+			.day-header.collapsed::before {
+				transform: translateY(-50%) rotate(0deg);   /* 收合時也要保持置中 */
+			}
             
             .day-header {
                 flex-direction: column;
@@ -325,48 +412,129 @@
         let isEditMode = false;
         let originalItinerary = null;
 
+        // 測試資料
+        const defaultItinerary = {
+            title: "日本關西四國行程",
+            subtitle: "2025年11月22日 - 11月29日 (8天7夜)",
+            days: [
+                {
+                    id: "day1",
+                    date: "11/22 (五)",
+                    title: "第一天 - 出發",
+                    accommodation: "關西機場飯店",
+                    items: [
+                        {
+                            id: "item1",
+                            type: "airport",
+                            time: "07:30",
+                            name: "桃園國際機場",
+                            activity: "辦理登機手續、免稅店"
+                        },
+                        {
+                            id: "item2",
+                            type: "transport",
+                            time: "07:30-11:00",
+                            name: "長榮航空 BR109",
+                            activity: "飛行時間約2.5小時"
+                        },
+                        {
+                            id: "item3",
+                            type: "city",
+                            time: "11:00-18:00",
+                            name: "大阪",
+                            activity: "關西機場→市區、心齋橋、道頓堀"
+                        }
+                    ]
+                },
+                {
+                    id: "day2",
+                    date: "11/23 (六)",
+                    title: "第二天 - 大阪觀光",
+                    accommodation: "大阪市區飯店",
+                    items: [
+                        {
+                            id: "item4",
+                            type: "attraction",
+                            time: "09:00",
+                            name: "大阪城",
+                            activity: "參觀天守閣"
+                        },
+                        {
+                            id: "item5",
+                            type: "attraction",
+                            time: "14:00",
+                            name: "道頓堀",
+                            activity: "購物、美食"
+                        }
+                    ]
+                }
+            ]
+        };
+
         // 載入行程資料
         async function loadItinerary() {
             try {
                 setStatus('loading', '載入中...');
-                const response = await fetch('/api/itinerary');
-                if (!response.ok) throw new Error('載入失敗');
                 
-                currentItinerary = await response.json();
+                // 嘗試從API載入，如果失敗則使用預設資料
+                try {
+                    const response = await fetch('/api/itinerary');
+                    if (response.ok) {
+                        currentItinerary = await response.json();
+                    } else {
+                        throw new Error('API not available');
+                    }
+                } catch (apiError) {
+                    console.log('API載入失敗，使用預設資料:', apiError.message);
+                    currentItinerary = defaultItinerary;
+                }
+                
                 renderItinerary();
-                setStatus('saved', '已儲存');
+                setStatus('saved', '已載入');
             } catch (error) {
                 console.error('載入行程失敗:', error);
                 setStatus('error', '載入失敗');
             }
         }
-
-        // 儲存行程資料
-        async function saveItinerary() {
-            try {
-                setStatus('saving', '儲存中...');
-                
-                // 收集編輯的資料
-                collectEditedData();
-                
-                const response = await fetch('/api/itinerary', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(currentItinerary)
-                });
-                
-                if (!response.ok) throw new Error('儲存失敗');
-                
-                setStatus('saved', '已儲存');
-                exitEditMode();
-            } catch (error) {
-                console.error('儲存失敗:', error);
-                setStatus('error', '儲存失敗');
-            }
+// 儲存行程資料
+async function saveItinerary() {
+    try {
+        setStatus('saving', '儲存中...');
+        
+        // 收集編輯的資料
+        collectEditedData();
+        
+        // 真正儲存到伺服器
+        const response = await fetch('/api/itinerary', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(currentItinerary)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-
+        
+        const result = await response.json();
+        console.log('儲存成功:', result);
+        
+        setStatus('saved', '已儲存');
+        exitEditMode();
+    } catch (error) {
+        console.error('儲存失敗:', error);
+        setStatus('error', '儲存失敗');
+        
+        // 可選：如果伺服器儲存失敗，暫時存到本地
+        try {
+            localStorage.setItem('itinerary_backup', JSON.stringify(currentItinerary));
+            console.log('已備份到本地儲存');
+        } catch (localError) {
+            console.error('本地備份也失敗:', localError);
+        }
+    }
+}
         // 設定狀態指示器
         function setStatus(type, message) {
             const indicator = document.getElementById('statusIndicator');
@@ -399,7 +567,7 @@
             document.getElementById('saveBtn').style.display = 'inline-block';
             document.getElementById('cancelBtn').style.display = 'inline-block';
             
-            makeEditable();
+            renderItinerary(); // 重新渲染以顯示編輯介面
         }
 
         // 退出編輯模式
@@ -441,15 +609,18 @@
             // 更新各個項目的資料
             currentItinerary.days.forEach(day => {
                 day.items.forEach(item => {
-                    const timeEl = document.querySelector(`[data-item-id="${item.id}"] .time-badge`);
-                    const nameEl = document.querySelector(`[data-item-id="${item.id}"] .location-name`);
-                    const activityEl = document.querySelector(`[data-item-id="${item.id}"] .location-activity`);
-                    const typeEl = document.querySelector(`[data-item-id="${item.id}"] .type-select`);
-                    
-                    if (timeEl) item.time = timeEl.textContent || timeEl.value;
-                    if (nameEl) item.name = nameEl.textContent || nameEl.value;
-                    if (activityEl) item.activity = activityEl.textContent || activityEl.value;
-                    if (typeEl) item.type = typeEl.value;
+                    const itemElement = document.querySelector(`[data-item-id="${item.id}"]`);
+                    if (itemElement) {
+                        const timeEl = itemElement.querySelector('.time-input');
+                        const nameEl = itemElement.querySelector('.location-name');
+                        const activityEl = itemElement.querySelector('.location-activity');
+                        const typeEl = itemElement.querySelector('.type-select');
+                        
+                        if (timeEl) item.time = timeEl.value;
+                        if (nameEl) item.name = nameEl.textContent;
+                        if (activityEl) item.activity = activityEl.textContent;
+                        if (typeEl) item.type = typeEl.value;
+                    }
                 });
             });
         }
@@ -471,7 +642,7 @@
                         <span>${day.date} - ${day.title}</span>
                         <span>住宿: ${day.accommodation}</span>
                     </div>
-                    <div class="day-content" id="content-${day.id}">
+                    <div class="day-content" id="content-${day.id}" style="display: block;">
                         ${day.items.map(item => renderTimelineItem(item)).join('')}
                         ${isEditMode ? `<button class="add-item-btn" onclick="addNewItem('${day.id}')">+ 新增行程項目</button>` : ''}
                     </div>
@@ -492,9 +663,13 @@
                 return `
                     <div class="timeline-item" data-item-id="${item.id}">
                         <div class="location-type ${typeClass}"></div>
-                        <div class="time-badge editable" contenteditable="true">${item.time}</div>
-                        <div class="location-info">
+                        <div class="time-section">
+                            <input type="text" class="time-input" value="${item.time}" placeholder="時間">
+                        </div>
+                        <div class="location-section">
                             <div class="location-name editable" contenteditable="true">${item.name}</div>
+                        </div>
+                        <div class="activity-section">
                             <div class="location-activity editable" contenteditable="true">${item.activity}</div>
                         </div>
                         <select class="type-select">
@@ -514,9 +689,13 @@
                 return `
                     <div class="timeline-item" data-item-id="${item.id}">
                         <div class="location-type ${typeClass}"></div>
-                        <div class="time-badge">${item.time}</div>
-                        <div class="location-info">
+                        <div class="time-section">
+                            <div class="time-badge">${item.time}</div>
+                        </div>
+                        <div class="location-section">
                             <div class="location-name">${item.name}</div>
+                        </div>
+                        <div class="activity-section">
                             <div class="location-activity">${item.activity}</div>
                         </div>
                     </div>
@@ -540,7 +719,7 @@
                 renderItinerary();
             }
         }
-
+		
         // 刪除項目
         function deleteItem(itemId) {
             if (confirm('確定要刪除這個項目嗎？')) {
@@ -553,10 +732,18 @@
 
         // 切換日期顯示
         function toggleDay(dayId) {
-            const content = document.getElementById(`content-${dayId}`);
-            const isOpen = content.style.display !== 'none';
-            content.style.display = isOpen ? 'none' : 'block';
-        }
+			const content = document.getElementById(`content-${dayId}`);
+			const header = document.querySelector(`[onclick="toggleDay('${dayId}')"]`);  // 👈 新增：找到標題元素
+			const isOpen = content.style.display !== 'none';
+			
+			if (isOpen) {
+				content.style.display = 'none';
+				header.classList.add('collapsed');     // 👈 新增：添加收合樣式
+			} else {
+				content.style.display = 'block';
+				header.classList.remove('collapsed');  // 👈 新增：移除收合樣式
+			}
+		}
 
         // 添加編輯監聽器
         function addEditableListeners() {
@@ -568,18 +755,6 @@
                     colorDiv.className = `location-type type-${this.value}`;
                 });
             });
-        }
-
-        // 自動儲存功能
-        function setupAutoSave() {
-            if (isEditMode) {
-                setTimeout(() => {
-                    if (isEditMode) {
-                        saveItinerary();
-                        setTimeout(setupAutoSave, 30000); // 30秒後再次檢查
-                    }
-                }, 30000);
-            }
         }
 
         // 頁面載入時初始化
