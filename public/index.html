@@ -776,6 +776,112 @@ async function saveItinerary() {
                 }
             }
         });
+		
+		// index.html 中的 JavaScript
+		class DatabaseNotificationClient {
+			constructor() {
+				this.eventSource = null;
+				this.reconnectDelay = 1000;
+				this.maxReconnectDelay = 30000;
+			}
+    
+			start() {
+				this.connect();
+			}
+    
+			connect() {
+				try {
+					this.eventSource = new EventSource('/api/events');
+					
+					this.eventSource.onopen = () => {
+						console.log('✅ 實時通知連接成功');
+						this.reconnectDelay = 1000; // 重置重連延遲
+					};
+					
+					this.eventSource.onmessage = (event) => {
+						try {
+							const data = JSON.parse(event.data);
+							this.handleNotification(data);
+						} catch (error) {
+							console.error('解析通知失敗:', error);
+						}
+					};
+					
+					this.eventSource.onerror = () => {
+						console.log('❌ 實時通知連接出錯，準備重連...');
+						this.eventSource.close();
+						this.scheduleReconnect();
+					};
+					
+				} catch (error) {
+					console.error('建立通知連接失敗:', error);
+					this.scheduleReconnect();
+				}
+			}
+    
+			handleNotification(data) {
+				switch(data.type) {
+					case 'connected':
+						console.log('🔔 通知系統已連接');
+						break;
+						
+					case 'itinerary_updated':
+						console.log('📝 行程資料已更新');
+						this.refreshItinerary();
+						this.showUpdateNotification();
+						break;
+						
+					case 'heartbeat':
+						// 靜默處理心跳
+						break;
+						
+					case 'server_shutdown':
+						console.log('🔄 伺服器重啟中...');
+						break;
+				}
+			}
+    
+			async refreshItinerary() {
+				try {
+					const response = await fetch('/api/itinerary');
+					const newData = await response.json();
+					
+					// 只有當資料真的不同時才更新
+					if (JSON.stringify(newData) !== JSON.stringify(currentItinerary)) {
+						currentItinerary = newData;
+						renderItinerary();
+					}
+				} catch (error) {
+					console.error('重新載入行程失敗:', error);
+				}
+			}
+    
+			showUpdateNotification() {
+				// 顯示友善的更新提示
+				const notification = document.createElement('div');
+				notification.className = 'update-notification';
+				notification.innerHTML = '📝 行程已更新！';
+				document.body.appendChild(notification);
+				
+				setTimeout(() => {
+					notification.remove();
+				}, 3000);
+			}
+    
+			scheduleReconnect() {
+				setTimeout(() => {
+					this.reconnectDelay = Math.min(
+						this.reconnectDelay * 1.5, 
+						this.maxReconnectDelay
+					);
+					this.connect();
+				}, this.reconnectDelay);
+			}
+		}
+
+		// 啟動通知客戶端
+		const notificationClient = new DatabaseNotificationClient();
+		notificationClient.start();
     </script>
 </body>
 </html>

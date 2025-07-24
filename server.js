@@ -13,6 +13,56 @@ const pool = new Pool({
     } : false
 });
 
+const notificationPool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+});
+
+// 儲存所有 SSE 連接
+const activeConnections = new Set();
+
+// 1. 設定資料庫通知監聽
+async function setupDatabaseNotifications() {
+    const client = await notificationPool.connect();
+    
+    // 監聽 itinerary_changes 頻道
+    await client.query('LISTEN itinerary_changes');
+    
+    // 當收到通知時執行
+    client.on('notification', (msg) => {
+        console.log('📢 收到資料庫通知:', msg.payload);
+        
+        try {
+            const data = JSON.parse(msg.payload);
+            broadcastToAllClients({
+                type: 'itinerary_updated',
+                data: data,
+                timestamp: Date.now()
+            });
+        } catch (error) {
+            console.error('解析通知失敗:', error);
+        }
+    });
+    
+    console.log('✅ 資料庫通知監聽已啟動');
+}
+
+// 2. 廣播給所有連接的客戶端
+function broadcastToAllClients(message) {
+    const messageStr = `data: ${JSON.stringify(message)}\n\n`;
+    
+    activeConnections.forEach(connection => {
+        try {
+            connection.write(messageStr);
+        } catch (error) {
+            // 移除失效的連接
+            activeConnections.delete(connection);
+        }
+    });
+    
+    console.log(`📡 已廣播給 ${activeConnections.size} 個客戶端`);
+}
+
 // 測試資料庫連接
 pool.on('connect', () => {
     console.log('✅ 已連接到 PostgreSQL 資料庫');
@@ -112,10 +162,15 @@ async function saveItineraryToDb(itineraryData) {
     }
 }
 
-// 更新現有資料（更有效率的方式）
+// 4. 修改儲存函數，加入通知
 async function updateItineraryInDb(itineraryData) {
+    const client = await pool.connect();
+    
     try {
-        const query = `
+        await client.query('BEGIN');
+        
+        // 更新資料
+        const updateQuery = `
             UPDATE itinerary 
             SET title = $1, subtitle = $2, data = $3, updated_at = CURRENT_TIMESTAMP
             WHERE id = (SELECT id FROM itinerary ORDER BY updated_at DESC LIMIT 1)
@@ -127,18 +182,25 @@ async function updateItineraryInDb(itineraryData) {
             { days: itineraryData.days }
         ];
         
-        const result = await pool.query(query, values);
+        await client.query(updateQuery, values);
         
-        if (result.rowCount === 0) {
-            // 如果沒有更新到任何資料，就插入新的
-            return await saveItineraryToDb(itineraryData);
-        }
+        // 🔔 發送通知！
+        const notifyPayload = JSON.stringify({
+            action: 'update',
+            title: itineraryData.title,
+            updatedAt: new Date().toISOString()
+        });
         
-        console.log('✅ 資料已更新到資料庫');
-        return true;
+        await client.query('NOTIFY itinerary_changes, $1', [notifyPayload]);
+        
+        await client.query('COMMIT');
+        console.log('✅ 資料已更新並發送通知');
+        
     } catch (error) {
-        console.error('更新資料庫失敗:', error);
+        await client.query('ROLLBACK');
         throw error;
+    } finally {
+        client.release();
     }
 }
 
@@ -515,12 +577,52 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// 3. SSE 端點
+app.get('/api/events', (req, res) => {
+    // 設定 SSE headers
+    res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*'
+    });
+    
+    // 加入連接列表
+    activeConnections.add(res);
+    console.log(`👋 新客戶端連接，總數: ${activeConnections.size}`);
+    
+    // 發送初始心跳
+    res.write('data: {"type":"connected"}\n\n');
+    
+    // 定期心跳（防止 Railway 超時）
+    const heartbeat = setInterval(() => {
+        try {
+            res.write('data: {"type":"heartbeat"}\n\n');
+        } catch (error) {
+            clearInterval(heartbeat);
+            activeConnections.delete(res);
+        }
+    }, 30000);
+    
+    // 連接斷開時清理
+    req.on('close', () => {
+        clearInterval(heartbeat);
+        activeConnections.delete(res);
+        console.log(`👋 客戶端斷開，剩餘: ${activeConnections.size}`);
+    });
+    
+    // Railway 容器重啟時優雅關閉
+    process.on('SIGTERM', () => {
+        res.write('data: {"type":"server_shutdown"}\n\n');
+        res.end();
+    });
+});
+
 // 啟動伺服器
 app.listen(PORT, async () => {
-    console.log(`🚀 伺服器運行在 http://localhost:${PORT}`);
-    
-    // 初始化資料庫
+    console.log(`🚀 伺服器運行在 port ${PORT}`);
     await initializeDatabase();
+    await setupDatabaseNotifications(); // 🔔 啟動通知監聽
 });
 
 // 優雅關閉
