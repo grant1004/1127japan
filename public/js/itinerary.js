@@ -280,7 +280,7 @@ function renderItinerary() {
 				<span>住宿: ${day.accommodation}</span>
 			</div>
 			<div class="day-content" id="content-${day.id}" style="display: block;">
-				${day.items.map(item => renderTimelineItem(item)).join('')}
+				${day.items.map(item => renderTimelineItem(item, day.id)).join('')}
 				${isEditMode ? `<button class="add-item-btn" onclick="addNewItem('${day.id}')">+ 新增行程項目</button>` : ''}
 			</div>
 		</div>
@@ -292,14 +292,26 @@ function renderItinerary() {
 	}
 }
 
+// 拖拉相關變數
+let draggedElement = null;
+let draggedData = null;
+
 // 渲染時間軸項目
-function renderTimelineItem(item) {
+function renderTimelineItem(item, dayId) {
 	const typeClass = `type-${item.type}`;
 	const noteCount = getNoteCount(item.id);
 	
 	if (isEditMode) {
 		return `
-			<div class="timeline-item" data-item-id="${item.id}">
+			<div class="timeline-item" 
+				 data-item-id="${item.id}" 
+				 data-day-id="${dayId}"
+				 draggable="true"
+				 ondragstart="handleDragStart(event)"
+				 ondragover="handleDragOver(event)" 
+				 ondrop="handleDrop(event)"
+				 ondragend="handleDragEnd(event)">
+				<div class="drag-handle">⋮⋮</div>
 				<div class="location-type ${typeClass}"></div>
 				<div class="time-section">
 					<input type="text" class="time-input" value="${item.time}" placeholder="時間">
@@ -550,6 +562,134 @@ function updateNotesCount(itemId) {
 		countEl.textContent = count;
 		countEl.className = `notes-count ${count === 0 ? 'zero' : ''}`;
 	}
+}
+
+// 🔥 拖拉功能相關函數
+// 開始拖拉
+function handleDragStart(event) {
+	draggedElement = event.target.closest('.timeline-item');
+	draggedData = {
+		itemId: draggedElement.dataset.itemId,
+		dayId: draggedElement.dataset.dayId
+	};
+	
+	// 視覺效果
+	draggedElement.classList.add('dragging');
+	event.dataTransfer.effectAllowed = 'move';
+	
+	console.log('開始拖拉:', draggedData);
+}
+
+// 拖拉經過
+function handleDragOver(event) {
+	event.preventDefault();
+	event.dataTransfer.dropEffect = 'move';
+	
+	const targetItem = event.target.closest('.timeline-item');
+	if (targetItem && targetItem !== draggedElement && targetItem.dataset.itemId) {
+		// 清除所有其他項目的指示
+		document.querySelectorAll('.timeline-item').forEach(item => {
+			item.classList.remove('drop-before', 'drop-after');
+		});
+		
+		// 顯示插入位置指示
+		const rect = targetItem.getBoundingClientRect();
+		const midpoint = rect.top + rect.height / 2;
+		
+		if (event.clientY < midpoint) {
+			targetItem.classList.add('drop-before');
+		} else {
+			targetItem.classList.add('drop-after');
+		}
+	}
+}
+
+// 放下
+function handleDrop(event) {
+	event.preventDefault();
+	
+	const targetItem = event.target.closest('.timeline-item');
+	if (targetItem && targetItem !== draggedElement && targetItem.dataset.itemId) {
+		const targetData = {
+			itemId: targetItem.dataset.itemId,
+			dayId: targetItem.dataset.dayId
+		};
+		
+		// 判斷插入位置
+		const rect = targetItem.getBoundingClientRect();
+		const midpoint = rect.top + rect.height / 2;
+		const insertBefore = event.clientY < midpoint;
+		
+		console.log('拖拉放下:', { draggedData, targetData, insertBefore });
+		
+		// 執行重新排序
+		reorderItems(draggedData, targetData, insertBefore);
+	}
+	
+	// 清理視覺效果
+	cleanupDragVisuals();
+}
+
+// 拖拉結束
+function handleDragEnd(event) {
+	cleanupDragVisuals();
+}
+
+// 清理視覺效果
+function cleanupDragVisuals() {
+	if (draggedElement) {
+		draggedElement.classList.remove('dragging');
+	}
+	
+	document.querySelectorAll('.timeline-item').forEach(item => {
+		item.classList.remove('drop-before', 'drop-after');
+	});
+	
+	draggedElement = null;
+	draggedData = null;
+}
+
+// 重新排序邏輯
+function reorderItems(draggedData, targetData, insertBefore) {
+	console.log('執行重新排序:', { draggedData, targetData, insertBefore });
+	
+	const sourceDay = currentItinerary.days.find(d => d.id === draggedData.dayId);
+	const targetDay = currentItinerary.days.find(d => d.id === targetData.dayId);
+	
+	if (!sourceDay || !targetDay) {
+		console.error('找不到日期:', { sourceDay, targetDay });
+		return;
+	}
+	
+	// 找到要移動的項目
+	const draggedIndex = sourceDay.items.findIndex(item => item.id === draggedData.itemId);
+	const draggedItem = sourceDay.items[draggedIndex];
+	
+	if (!draggedItem) {
+		console.error('找不到拖拉項目');
+		return;
+	}
+	
+	// 從原位置移除
+	sourceDay.items.splice(draggedIndex, 1);
+	
+	// 找到目標位置
+	const targetIndex = targetDay.items.findIndex(item => item.id === targetData.itemId);
+	const insertIndex = insertBefore ? targetIndex : targetIndex + 1;
+	
+	// 插入到新位置
+	targetDay.items.splice(insertIndex, 0, draggedItem);
+	
+	console.log('重新排序完成，重新渲染...');
+	
+	// 重新渲染
+	renderItinerary();
+	
+	// 自動儲存
+	setTimeout(() => {
+		console.log('自動儲存...');
+		saveItinerary();
+	}, 300);
 }
 
 // 新增項目

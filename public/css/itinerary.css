@@ -475,7 +475,6 @@ body {
 /* 操作按鈕 */
 .note-actions {
 	display: flex;
-	justify-content: flex-end;  /* 改為這個 */
 	gap: 5px;
 }
 
@@ -556,7 +555,111 @@ body {
 	margin-left: 10px;
 }
 
+/* 拖拉手柄 */
+.drag-handle {
+	position: absolute;
+	left: 5px;
+	top: 50%;
+	transform: translateY(-50%);
+	color: #a0aec0;
+	cursor: grab;
+	font-size: 16px;
+	opacity: 0;
+	transition: opacity 0.2s;
+	user-select: none;
+}
+
+.edit-mode .timeline-item:hover .drag-handle {
+	opacity: 1;
+}
+
+.drag-handle:active {
+	cursor: grabbing;
+}
+
+/* 編輯模式下為拖拉手柄留出空間 */
+.edit-mode .timeline-item {
+	padding-left: 35px;
+	position: relative;
+}
+
+/* 拖拉狀態 */
+.timeline-item[draggable="true"] {
+	cursor: move;
+}
+
+.timeline-item.dragging {
+	opacity: 0.5;
+	transform: rotate(2deg);
+	box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+	z-index: 1000;
+	background: #f7fafc;
+}
+
+/* 插入位置指示 */
+.timeline-item.drop-before::before {
+	content: '';
+	position: absolute;
+	top: -2px;
+	left: 0;
+	right: 0;
+	height: 4px;
+	background: #4299e1;
+	border-radius: 2px;
+	z-index: 10;
+}
+
 /* 備註新增表單 */
+.note-form {
+	background: white;
+	border: 1px solid #e2e8f0;
+	border-radius: 6px;
+	padding: 15px;
+	margin-bottom: 15px;
+}
+
+.note-form-row {
+	display: flex;
+	gap: 10px;
+	margin-bottom: 10px;
+}
+
+.note-form-row input,
+.note-form-row select,
+.note-form-row textarea {
+	padding: 6px 10px;
+	border: 1px solid #d1d5db;
+	border-radius: 4px;
+	font-size: 12px;
+}
+
+.note-form-row input[type="text"] {
+	flex: 1;
+}
+
+.note-form-row textarea {
+	flex: 1;
+	min-height: 60px;
+	resize: vertical;
+}
+
+.note-form-actions {
+	display: flex;
+	gap: 10px;
+	justify-content: flex-end;
+}
+
+.timeline-item.drop-after::after {
+	content: '';
+	position: absolute;
+	bottom: -2px;
+	left: 0;
+	right: 0;
+	height: 4px;
+	background: #4299e1;
+	border-radius: 2px;
+	z-index: 10;
+}
 .note-form {
 	background: white;
 	border: 1px solid #e2e8f0;
@@ -606,10 +709,22 @@ body {
 		padding: 10px;
 	}
 	
-	.timeline-item {
+	.edit-mode .timeline-item {
+		padding-left: 35px;
+		position: relative;
 		flex-direction: column;
 		align-items: flex-start;
 		gap: 10px;
+	}
+	
+	.drag-handle {
+		font-size: 18px;
+		left: 8px;
+	}
+	
+	.edit-mode .timeline-item:hover .drag-handle,
+	.edit-mode .timeline-item:active .drag-handle {
+		opacity: 1;
 	}
 	
 	.timeline-item .timeline-item-title {
