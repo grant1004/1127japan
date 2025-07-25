@@ -199,7 +199,9 @@ async function saveItinerary() {
         console.log('儲存成功:', result);
         
         setStatus('saved', '已儲存');
-        exitEditMode();
+        if (isEditMode) {
+            exitEditMode();
+        }
     } catch (error) {
         console.error('儲存失敗:', error);
         setStatus('error', '儲存失敗');
@@ -214,6 +216,43 @@ async function saveItinerary() {
         } catch (localError) {
             console.error('本地備份也失敗:', localError);
         }
+    }
+}
+
+// 專門用於備註的儲存函數 - 不會觸發 exitEditMode
+async function saveNotesOnly() {
+    try {
+        setStatus('saving', '儲存備註中...');
+        
+        // 包含備註資料
+        const dataToSave = {
+            ...window.currentItinerary,
+            notes: window.itemNotes
+        };
+        
+        // 真正儲存到伺服器
+        const response = await fetch('/api/itinerary', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dataToSave)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('備註儲存成功:', result);
+        
+        setStatus('saved', '備註已儲存');
+        // 注意：這裡不調用 exitEditMode()
+        
+    } catch (error) {
+        console.error('儲存備註失敗:', error);
+        setStatus('error', '儲存備註失敗');
+        throw error; // 重新拋出錯誤供調用者處理
     }
 }
 
@@ -565,14 +604,11 @@ async function saveNote(itemId) {
 	updateNotesCount(itemId);
 	cancelAddNote(itemId);
 	
-	// 🔥 新增：儲存到資料庫
+	// 🔥 修改：使用專門的備註儲存函數，不會關閉備註面板
 	try {
-		setStatus('saving', '儲存備註中...');
-		await saveItinerary(); // 這會包含備註資料一起儲存
-		setStatus('saved', '備註已儲存');
+		await saveNotesOnly();
 	} catch (error) {
 		console.error('儲存備註失敗:', error);
-		setStatus('error', '儲存備註失敗');
 		// 可選：顯示錯誤提示
 		alert('儲存備註失敗，請稍後重試');
 	}
@@ -600,14 +636,11 @@ async function editNote(itemId, noteId) {
 	
 	renderNotesTable(itemId);
 	
-	// 🔥 新增：儲存到資料庫
+	// 🔥 修改：使用專門的備註儲存函數，不會關閉備註面板
 	try {
-		setStatus('saving', '更新備註中...');
-		await saveItinerary();
-		setStatus('saved', '備註已更新');
+		await saveNotesOnly();
 	} catch (error) {
 		console.error('更新備註失敗:', error);
-		setStatus('error', '更新備註失敗');
 		alert('更新備註失敗，請稍後重試');
 	}
 }
@@ -621,14 +654,11 @@ async function deleteNote(itemId, noteId) {
 		renderNotesTable(itemId);
 		updateNotesCount(itemId);
 		
-		// 🔥 新增：儲存到資料庫
+		// 🔥 修改：使用專門的備註儲存函數，不會關閉備註面板
 		try {
-			setStatus('saving', '刪除備註中...');
-			await saveItinerary();
-			setStatus('saved', '備註已刪除');
+			await saveNotesOnly();
 		} catch (error) {
 			console.error('刪除備註失敗:', error);
-			setStatus('error', '刪除備註失敗');
 			alert('刪除備註失敗，請稍後重試');
 		}
 	}
