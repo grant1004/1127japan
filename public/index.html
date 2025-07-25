@@ -4,884 +4,97 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>日本關西四國行程(ZTMY)</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f8fafc;
-            color: #1a202c;
-            line-height: 1.6;
-        }
-        
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        .header {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-            text-align: center;
-            position: relative;
-        }
-        
-        .header h1 {
-            font-size: 2em;
-            color: #2d3748;
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-        
-        .header p {
-            color: #718096;
-            font-size: 1.1em;
-        }
-		
-		.day-header::before {
-			content: '';                    /* 空內容，用來畫三角形 */
-			width: 0;                      /* 寬度為0 */
-			height: 0;                     /* 高度為0 */
-			border-left: 6px solid #718096;  /* 左邊框就是三角形的顏色部分 */
-			border-top: 4px solid transparent;    /* 上下邊框透明，形成三角形 */
-			border-bottom: 4px solid transparent;
-			margin-right: 10px;            /* 與文字的間距 */
-			transition: transform 0.2s ease;  /* 旋轉動畫效果 */
-			transform: rotate(90deg);       /* 默認向下（90度旋轉） */
-		}
-
-		/* 收合狀態的三角形樣式 */
-		.day-header.collapsed::before {
-			transform: rotate(0deg);        /* 收合時向右（0度） */
-		}
-        
-        .edit-controls {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            display: flex;
-            gap: 10px;
-        }
-        
-        .btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-        
-        .btn-primary {
-            background: #4299e1;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: #3182ce;
-        }
-        
-        .btn-success {
-            background: #48bb78;
-            color: white;
-        }
-        
-        .btn-success:hover {
-            background: #38a169;
-        }
-        
-        .btn-danger {
-            background: #e53e3e;
-            color: white;
-        }
-        
-        .btn-danger:hover {
-            background: #c53030;
-        }
-        
-        .btn-small {
-            padding: 4px 8px;
-            font-size: 12px;
-        }
-        
-        .status-indicator {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-        
-        .status-saved {
-            background: #c6f6d5;
-            color: #22543d;
-        }
-        
-        .status-saving {
-            background: #fbb6ce;
-            color: #702459;
-        }
-        
-        .timeline-section {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        
-        .timeline-header {
-            background: #4a5568;
-            color: white;
-            padding: 20px;
-            font-size: 1.2em;
-            font-weight: 600;
-        }
-        
-        .timeline {
-            padding: 0;
-        }
-        
-        .day-group {
-            border-bottom: 1px solid #e2e8f0;
-        }
-        
-        .day-group:last-child {
-            border-bottom: none;
-        }
-        
-        .day-header {
-            background: #f7fafc;
-            padding: 15px 20px;
-            border-bottom: 1px solid #e2e8f0;
-            font-weight: 600;
-            color: #2d3748;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .day-header:hover {
-            background: #edf2f7;
-        }
-        
-        .day-content {
-            padding: 0;
-        }
-        
-        .timeline-item {
-            padding: 15px 20px;
-            border-bottom: 1px solid #f1f5f9;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            position: relative;
-        }
-        
-        .timeline-item:last-child {
-            border-bottom: none;
-        }
-        
-        /* 修復後的時間區域 - 比例1 */
-        .time-section {
-            flex: 1;
-            min-width: 100px;
-            max-width: 120px;
-        }
-        
-        .time-badge {
-            background: #e2e8f0;
-            color: #4a5568;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.875em;
-            font-weight: 500;
-            text-align: center;
-            width: 100%;
-        }
-        
-        /* 編輯模式的時間輸入框 */
-        .time-input {
-            background: #e2e8f0;
-            color: #4a5568;
-            padding: 6px 8px;
-            border-radius: 20px;
-            font-size: 0.875em;
-            font-weight: 500;
-            text-align: center;
-            width: 100%;
-            border: 1px solid transparent;
-            font-family: inherit;
-        }
-        
-        .time-input:focus {
-            outline: none;
-            border-color: #4299e1;
-            background: #fff;
-            box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.1);
-        }
-        
-        /* 地點區域 - 比例1 */
-        .location-section {
-            flex: 1;
-            min-width: 120px;
-        }
-        
-        .location-name {
-            font-weight: 600;
-            color: #2d3748;
-            margin-bottom: 2px;
-        }
-        
-        /* 活動內容區域 - 比例5 */
-        .activity-section {
-            flex: 5;
-        }
-        
-        .location-activity {
-            color: #718096;
-            font-size: 0.9em;
-        }
-        
-        .location-type {
-            width: 8px;
-            height: 40px;
-            border-radius: 4px;
-            flex-shrink: 0;
-        }
-        
-        .type-airport { background: #805ad5; }
-        .type-transport { background: #38b2ac; }
-        .type-city { background: #4299e1; }
-        .type-attraction { background: #48bb78; }
-        .type-accommodation { background: #ed8936; }
-        .type-event { background: #e53e3e; }
-        
-        .item-controls {
-            opacity: 0;
-            transition: opacity 0.2s;
-            display: flex;
-            gap: 5px;
-            flex-shrink: 0;
-        }
-        
-        .timeline-item:hover .item-controls {
-            opacity: 1;
-        }
-        
-        .edit-mode .item-controls {
-            opacity: 1;
-        }
-        
-        /* 統一的可編輯樣式 */
-        .editable {
-            background: transparent;
-            border: 1px solid transparent;
-            font-family: inherit;
-            font-size: inherit;
-            color: inherit;
-            width: 100%;
-            padding: 4px 6px;
-            border-radius: 4px;
-            transition: all 0.2s;
-        }
-        
-        .editable:focus {
-            outline: none;
-            background: #fff;
-            border-color: #4299e1;
-            box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.1);
-        }
-        
-        /* 標題區域的特殊處理 */
-        .header .editable {
-            width: auto;
-            display: inline-block;
-            text-align: center;
-            min-width: 200px;
-            padding: 2px 8px;
-        }
-        
-        .add-item-btn {
-            width: 100%;
-            background: #f7fafc;
-            border: 2px dashed #cbd5e0;
-            color: #718096;
-            padding: 15px;
-            cursor: pointer;
-            border-radius: 6px;
-            margin: 10px 0;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-        
-        .add-item-btn:hover {
-            background: #edf2f7;
-            border-color: #a0aec0;
-        }
-        
-        .type-select {
-            padding: 4px 8px;
-            border: 1px solid #cbd5e0;
-            border-radius: 4px;
-            font-size: 12px;
-            background: white;
-            margin-left: 10px;
-        }
-        
-        @media (max-width: 768px) {
-            .container {
-                padding: 10px;
-            }
-            
-            .timeline-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-            
-            .time-section,
-            .location-section,
-            .activity-section {
-                flex: 1;
-                width: 100%;
-                max-width: none;
-            }
-			
-			/* 手機版三角形位置調整 */
-			.day-header::before {
-				position: absolute;             /* 改為絕對定位 */
-				right: 20px;                   /* 放到右側 */
-				top: 50%;                      /* 垂直置中 */
-				transform: translateY(-50%) rotate(90deg);  /* 置中+旋轉 */
-				margin-right: 0;               /* 移除右邊距 */
-			}
-
-			.day-header.collapsed::before {
-				transform: translateY(-50%) rotate(0deg);   /* 收合時也要保持置中 */
-			}
-            
-            .day-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 5px;
-            }
-            
-            .edit-controls {
-                position: static;
-                justify-content: center;
-                margin-top: 20px;
-            }
-        }
-    </style>
+    
+    <!-- 載入外部 CSS -->
+    <link rel="stylesheet" href="css/itinerary.css">
+    
+    <!-- 預載入重要資源 -->
+    <link rel="preload" href="js/itinerary.js" as="script">
+    <link rel="preload" href="js/notification.js" as="script">
+    
+    <!-- PWA 支援 (選用) -->
+    <meta name="theme-color" content="#4299e1">
+    <meta name="description" content="日本關西四國旅遊行程管理工具">
 </head>
 <body>
+    <!-- 連線狀態指示器 (選用) -->
+    <div id="connectionStatus" class="connection-status" style="display: none;"></div>
+    
     <div class="container">
+        <!-- 頁面頭部 -->
         <div class="header">
             <div class="status-indicator" id="statusIndicator">已儲存</div>
+            
             <div class="edit-controls">
                 <button class="btn btn-primary" id="editBtn" onclick="toggleEditMode()">編輯模式</button>
                 <button class="btn btn-success" id="saveBtn" onclick="saveItinerary()" style="display: none;">儲存</button>
                 <button class="btn btn-danger" id="cancelBtn" onclick="cancelEdit()" style="display: none;">取消</button>
             </div>
+            
             <h1 id="title">日本關西四國行程</h1>
             <p id="subtitle">2025年11月22日 - 11月29日 (8天7夜)</p>
         </div>
         
+        <!-- 主要內容區域 -->
         <div class="timeline-section">
             <div class="timeline-header">行程時間軸</div>
             <div class="timeline" id="timeline">
                 <!-- 動態載入內容 -->
+                <div class="loading-placeholder" style="padding: 40px; text-align: center; color: #718096;">
+                    載入中...
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- 載入 JavaScript 檔案 -->
+    <script src="js/itinerary.js"></script>
+    <script src="js/notification.js"></script>
+    
+    <!-- 初始化腳本 -->
     <script>
-        let currentItinerary = null;
-        let isEditMode = false;
-        let originalItinerary = null;
-
-        // 測試資料
-        const defaultItinerary = {
-            title: "日本關西四國行程",
-            subtitle: "2025年11月22日 - 11月29日 (8天7夜)",
-            days: [
-                {
-                    id: "day1",
-                    date: "11/22 (五)",
-                    title: "第一天 - 出發",
-                    accommodation: "關西機場飯店",
-                    items: [
-                        {
-                            id: "item1",
-                            type: "airport",
-                            time: "07:30",
-                            name: "桃園國際機場",
-                            activity: "辦理登機手續、免稅店"
-                        },
-                        {
-                            id: "item2",
-                            type: "transport",
-                            time: "07:30-11:00",
-                            name: "長榮航空 BR109",
-                            activity: "飛行時間約2.5小時"
-                        },
-                        {
-                            id: "item3",
-                            type: "city",
-                            time: "11:00-18:00",
-                            name: "大阪",
-                            activity: "關西機場→市區、心齋橋、道頓堀"
-                        }
-                    ]
-                },
-                {
-                    id: "day2",
-                    date: "11/23 (六)",
-                    title: "第二天 - 大阪觀光",
-                    accommodation: "大阪市區飯店",
-                    items: [
-                        {
-                            id: "item4",
-                            type: "attraction",
-                            time: "09:00",
-                            name: "大阪城",
-                            activity: "參觀天守閣"
-                        },
-                        {
-                            id: "item5",
-                            type: "attraction",
-                            time: "14:00",
-                            name: "道頓堀",
-                            activity: "購物、美食"
-                        }
-                    ]
-                }
-            ]
-        };
-
-        // 載入行程資料
-        async function loadItinerary() {
-            try {
-                setStatus('loading', '載入中...');
-                
-                // 嘗試從API載入，如果失敗則使用預設資料
-                try {
-                    const response = await fetch('/api/itinerary');
-                    if (response.ok) {
-                        currentItinerary = await response.json();
-                    } else {
-                        throw new Error('API not available');
-                    }
-                } catch (apiError) {
-                    console.log('API載入失敗，使用預設資料:', apiError.message);
-                    currentItinerary = defaultItinerary;
-                }
-                
-                renderItinerary();
-                setStatus('saved', '已載入');
-            } catch (error) {
-                console.error('載入行程失敗:', error);
-                setStatus('error', '載入失敗');
-            }
-        }
-// 儲存行程資料
-async function saveItinerary() {
-    try {
-        setStatus('saving', '儲存中...');
-        
-        // 收集編輯的資料
-        collectEditedData();
-        
-        // 真正儲存到伺服器
-        const response = await fetch('/api/itinerary', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(currentItinerary)
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        console.log('儲存成功:', result);
-        
-        setStatus('saved', '已儲存');
-        exitEditMode();
-    } catch (error) {
-        console.error('儲存失敗:', error);
-        setStatus('error', '儲存失敗');
-        
-        // 可選：如果伺服器儲存失敗，暫時存到本地
-        try {
-            localStorage.setItem('itinerary_backup', JSON.stringify(currentItinerary));
-            console.log('已備份到本地儲存');
-        } catch (localError) {
-            console.error('本地備份也失敗:', localError);
-        }
-    }
-}
-        // 設定狀態指示器
-        function setStatus(type, message) {
-            const indicator = document.getElementById('statusIndicator');
-            indicator.textContent = message;
-            indicator.className = 'status-indicator';
-            
-            if (type === 'saved') {
-                indicator.classList.add('status-saved');
-            } else if (type === 'saving' || type === 'loading') {
-                indicator.classList.add('status-saving');
-            }
-        }
-
-        // 切換編輯模式
-        function toggleEditMode() {
-            if (!isEditMode) {
-                enterEditMode();
-            } else {
-                exitEditMode();
-            }
-        }
-
-        // 進入編輯模式
-        function enterEditMode() {
-            isEditMode = true;
-            originalItinerary = JSON.parse(JSON.stringify(currentItinerary));
-            
-            document.body.classList.add('edit-mode');
-            document.getElementById('editBtn').style.display = 'none';
-            document.getElementById('saveBtn').style.display = 'inline-block';
-            document.getElementById('cancelBtn').style.display = 'inline-block';
-            
-            renderItinerary(); // 重新渲染以顯示編輯介面
-        }
-
-        // 退出編輯模式
-        function exitEditMode() {
-            isEditMode = false;
-            
-            document.body.classList.remove('edit-mode');
-            document.getElementById('editBtn').style.display = 'inline-block';
-            document.getElementById('saveBtn').style.display = 'none';
-            document.getElementById('cancelBtn').style.display = 'none';
-            
-            renderItinerary();
-        }
-
-        // 取消編輯
-        function cancelEdit() {
-            currentItinerary = originalItinerary;
-            exitEditMode();
-        }
-
-        // 讓元素可編輯
-        function makeEditable() {
-            // 標題可編輯
-            const title = document.getElementById('title');
-            const subtitle = document.getElementById('subtitle');
-            
-            title.contentEditable = true;
-            subtitle.contentEditable = true;
-            title.classList.add('editable');
-            subtitle.classList.add('editable');
-        }
-
-        // 收集編輯的資料
-        function collectEditedData() {
-            // 更新標題
-            currentItinerary.title = document.getElementById('title').textContent;
-            currentItinerary.subtitle = document.getElementById('subtitle').textContent;
-            
-            // 更新各個項目的資料
-            currentItinerary.days.forEach(day => {
-                day.items.forEach(item => {
-                    const itemElement = document.querySelector(`[data-item-id="${item.id}"]`);
-                    if (itemElement) {
-                        const timeEl = itemElement.querySelector('.time-input');
-                        const nameEl = itemElement.querySelector('.location-name');
-                        const activityEl = itemElement.querySelector('.location-activity');
-                        const typeEl = itemElement.querySelector('.type-select');
-                        
-                        if (timeEl) item.time = timeEl.value;
-                        if (nameEl) item.name = nameEl.textContent;
-                        if (activityEl) item.activity = activityEl.textContent;
-                        if (typeEl) item.type = typeEl.value;
-                    }
-                });
-            });
-        }
-
-        // 渲染行程
-        function renderItinerary() {
-            if (!currentItinerary) return;
-            
-            const timeline = document.getElementById('timeline');
-            const title = document.getElementById('title');
-            const subtitle = document.getElementById('subtitle');
-            
-            title.textContent = currentItinerary.title;
-            subtitle.textContent = currentItinerary.subtitle;
-            
-            timeline.innerHTML = currentItinerary.days.map(day => `
-                <div class="day-group">
-                    <div class="day-header" onclick="toggleDay('${day.id}')">
-                        <span>${day.date} - ${day.title}</span>
-                        <span>住宿: ${day.accommodation}</span>
-                    </div>
-                    <div class="day-content" id="content-${day.id}" style="display: block;">
-                        ${day.items.map(item => renderTimelineItem(item)).join('')}
-                        ${isEditMode ? `<button class="add-item-btn" onclick="addNewItem('${day.id}')">+ 新增行程項目</button>` : ''}
-                    </div>
-                </div>
-            `).join('');
-            
-            if (isEditMode) {
-                makeEditable();
-                addEditableListeners();
-            }
-        }
-
-        // 渲染時間軸項目
-        function renderTimelineItem(item) {
-            const typeClass = `type-${item.type}`;
-            
-            if (isEditMode) {
-                return `
-                    <div class="timeline-item" data-item-id="${item.id}">
-                        <div class="location-type ${typeClass}"></div>
-                        <div class="time-section">
-                            <input type="text" class="time-input" value="${item.time}" placeholder="時間">
-                        </div>
-                        <div class="location-section">
-                            <div class="location-name editable" contenteditable="true">${item.name}</div>
-                        </div>
-                        <div class="activity-section">
-                            <div class="location-activity editable" contenteditable="true">${item.activity}</div>
-                        </div>
-                        <select class="type-select">
-                            <option value="airport" ${item.type === 'airport' ? 'selected' : ''}>機場</option>
-                            <option value="transport" ${item.type === 'transport' ? 'selected' : ''}>交通</option>
-                            <option value="city" ${item.type === 'city' ? 'selected' : ''}>城市</option>
-                            <option value="attraction" ${item.type === 'attraction' ? 'selected' : ''}>景點</option>
-                            <option value="accommodation" ${item.type === 'accommodation' ? 'selected' : ''}>住宿</option>
-                            <option value="event" ${item.type === 'event' ? 'selected' : ''}>活動</option>
-                        </select>
-                        <div class="item-controls">
-                            <button class="btn btn-danger btn-small" onclick="deleteItem('${item.id}')">刪除</button>
-                        </div>
-                    </div>
-                `;
-            } else {
-                return `
-                    <div class="timeline-item" data-item-id="${item.id}">
-                        <div class="location-type ${typeClass}"></div>
-                        <div class="time-section">
-                            <div class="time-badge">${item.time}</div>
-                        </div>
-                        <div class="location-section">
-                            <div class="location-name">${item.name}</div>
-                        </div>
-                        <div class="activity-section">
-                            <div class="location-activity">${item.activity}</div>
-                        </div>
-                    </div>
-                `;
-            }
-        }
-
-        // 新增項目
-        function addNewItem(dayId) {
-            const newItem = {
-                id: `item${Date.now()}`,
-                type: 'attraction',
-                time: '00:00',
-                name: '新景點',
-                activity: '請編輯活動內容'
-            };
-            
-            const day = currentItinerary.days.find(d => d.id === dayId);
-            if (day) {
-                day.items.push(newItem);
-                renderItinerary();
-            }
-        }
-		
-        // 刪除項目
-        function deleteItem(itemId) {
-            if (confirm('確定要刪除這個項目嗎？')) {
-                currentItinerary.days.forEach(day => {
-                    day.items = day.items.filter(item => item.id !== itemId);
-                });
-                renderItinerary();
-            }
-        }
-
-        // 切換日期顯示
-        function toggleDay(dayId) {
-			const content = document.getElementById(`content-${dayId}`);
-			const header = document.querySelector(`[onclick="toggleDay('${dayId}')"]`);  // 👈 新增：找到標題元素
-			const isOpen = content.style.display !== 'none';
-			
-			if (isOpen) {
-				content.style.display = 'none';
-				header.classList.add('collapsed');     // 👈 新增：添加收合樣式
-			} else {
-				content.style.display = 'block';
-				header.classList.remove('collapsed');  // 👈 新增：移除收合樣式
-			}
-		}
-
-        // 添加編輯監聽器
-        function addEditableListeners() {
-            // 類型選擇器變更事件
-            document.querySelectorAll('.type-select').forEach(select => {
-                select.addEventListener('change', function() {
-                    const item = this.closest('.timeline-item');
-                    const colorDiv = item.querySelector('.location-type');
-                    colorDiv.className = `location-type type-${this.value}`;
-                });
-            });
-        }
-
         // 頁面載入時初始化
         document.addEventListener('DOMContentLoaded', function() {
-            loadItinerary();
+            console.log('🚀 應用程式啟動中...');
+            
+            // 載入行程資料
+            if (typeof loadItinerary === 'function') {
+                loadItinerary();
+            } else {
+                console.error('loadItinerary 函數未找到');
+            }
+            
+            // 啟動通知客戶端
+            if (window.notification && window.notification.client()) {
+                window.notification.client().start();
+            }
+            
+            console.log('✅ 應用程式初始化完成');
         });
-
-        // 鍵盤快捷鍵
-        document.addEventListener('keydown', function(e) {
-            if (e.ctrlKey || e.metaKey) {
-                if (e.key === 's') {
-                    e.preventDefault();
-                    if (isEditMode) {
-                        saveItinerary();
-                    }
-                } else if (e.key === 'e') {
-                    e.preventDefault();
-                    toggleEditMode();
-                }
+        
+        // 全域錯誤處理
+        window.addEventListener('error', function(event) {
+            console.error('全域錯誤:', event.error);
+            
+            // 顯示用戶友善的錯誤訊息
+            if (window.notification) {
+                window.notification.showNotification('應用程式發生錯誤，請重新整理頁面', 'error', 5000);
             }
         });
-		
-		// index.html 中的 JavaScript
-		class DatabaseNotificationClient {
-			constructor() {
-				this.eventSource = null;
-				this.reconnectDelay = 1000;
-				this.maxReconnectDelay = 30000;
-			}
-    
-			start() {
-				this.connect();
-			}
-    
-			connect() {
-				try {
-					this.eventSource = new EventSource('/api/events');
-					
-					this.eventSource.onopen = () => {
-						console.log('✅ 實時通知連接成功');
-						this.reconnectDelay = 1000; // 重置重連延遲
-					};
-					
-					this.eventSource.onmessage = (event) => {
-						try {
-							const data = JSON.parse(event.data);
-							this.handleNotification(data);
-						} catch (error) {
-							console.error('解析通知失敗:', error);
-						}
-					};
-					
-					this.eventSource.onerror = () => {
-						console.log('❌ 實時通知連接出錯，準備重連...');
-						this.eventSource.close();
-						this.scheduleReconnect();
-					};
-					
-				} catch (error) {
-					console.error('建立通知連接失敗:', error);
-					this.scheduleReconnect();
-				}
-			}
-    
-			handleNotification(data) {
-				switch(data.type) {
-					case 'connected':
-						console.log('🔔 通知系統已連接');
-						break;
-						
-					case 'itinerary_updated':
-						console.log('📝 行程資料已更新');
-						this.refreshItinerary();
-						this.showUpdateNotification();
-						break;
-						
-					case 'heartbeat':
-						// 靜默處理心跳
-						break;
-						
-					case 'server_shutdown':
-						console.log('🔄 伺服器重啟中...');
-						break;
-				}
-			}
-    
-			async refreshItinerary() {
-				try {
-					const response = await fetch('/api/itinerary');
-					const newData = await response.json();
-					
-					// 只有當資料真的不同時才更新
-					if (JSON.stringify(newData) !== JSON.stringify(currentItinerary)) {
-						currentItinerary = newData;
-						renderItinerary();
-					}
-				} catch (error) {
-					console.error('重新載入行程失敗:', error);
-				}
-			}
-    
-			showUpdateNotification() {
-				// 顯示友善的更新提示
-				const notification = document.createElement('div');
-				notification.className = 'update-notification';
-				notification.innerHTML = '📝 行程已更新！';
-				document.body.appendChild(notification);
-				
-				setTimeout(() => {
-					notification.remove();
-				}, 3000);
-			}
-    
-			scheduleReconnect() {
-				setTimeout(() => {
-					this.reconnectDelay = Math.min(
-						this.reconnectDelay * 1.5, 
-						this.maxReconnectDelay
-					);
-					this.connect();
-				}, this.reconnectDelay);
-			}
-		}
-
-		// 啟動通知客戶端
-		const notificationClient = new DatabaseNotificationClient();
-		notificationClient.start();
+        
+        // 未捕捉的 Promise 錯誤
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('未處理的 Promise 錯誤:', event.reason);
+            event.preventDefault(); // 防止錯誤出現在控制台
+        });
+        
+        // 效能監控 (選用)
+        if ('performance' in window) {
+            window.addEventListener('load', function() {
+                const loadTime = performance.now();
+                console.log(`📊 頁面載入時間: ${Math.round(loadTime)}ms`);
+            });
+        }
     </script>
 </body>
 </html>
