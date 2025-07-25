@@ -1,100 +1,138 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>日本關西四國行程(ZTMY)</title>
-    
-    <!-- 載入外部 CSS -->
-    <link rel="stylesheet" href="css/itinerary.css">
-    
-    <!-- 預載入重要資源 -->
-    <link rel="preload" href="js/itinerary.js" as="script">
-    <link rel="preload" href="js/notification.js" as="script">
-    
-    <!-- PWA 支援 (選用) -->
-    <meta name="theme-color" content="#4299e1">
-    <meta name="description" content="日本關西四國旅遊行程管理工具">
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>日本關西四國行程(ZTMY)</title>
+	
+	<!-- 載入外部 CSS -->
+	<link rel="stylesheet" href="css/itinerary.css">
+	
+	<!-- 預載入重要資源 -->
+	<link rel="preload" href="js/itinerary.js" as="script">
+	<link rel="preload" href="js/notification.js" as="script">
+	
+	<!-- PWA 支援 (選用) -->
+	<meta name="theme-color" content="#4299e1">
+	<meta name="description" content="日本關西四國旅遊行程管理工具">
 </head>
 <body>
-    <!-- 連線狀態指示器 (選用) -->
-    <div id="connectionStatus" class="connection-status" style="display: none;"></div>
-    
-    <div class="container">
-        <!-- 頁面頭部 -->
-        <div class="header">
-            <div class="status-indicator" id="statusIndicator">已儲存</div>
-            
-            <div class="edit-controls">
-                <button class="btn btn-primary" id="editBtn" onclick="toggleEditMode()">編輯模式</button>
-                <button class="btn btn-success" id="saveBtn" onclick="saveItinerary()" style="display: none;">儲存</button>
-                <button class="btn btn-danger" id="cancelBtn" onclick="cancelEdit()" style="display: none;">取消</button>
-            </div>
-            
-            <h1 id="title">日本關西四國行程</h1>
-            <p id="subtitle">2025年11月22日 - 11月29日 (8天7夜)</p>
-        </div>
-        
-        <!-- 主要內容區域 -->
-        <div class="timeline-section">
-            <div class="timeline-header">行程時間軸</div>
-            <div class="timeline" id="timeline">
-                <!-- 動態載入內容 -->
-                <div class="loading-placeholder" style="padding: 40px; text-align: center; color: #718096;">
-                    載入中...
-                </div>
-            </div>
-        </div>
-    </div>
+	<!-- 連線狀態指示器 (選用) -->
+	<div id="connectionStatus" class="connection-status" style="display: none;"></div>
+	
+	<!-- 頁面頭部 -->
+	<div class="header">
+		<div class="status-indicator" id="statusIndicator">已儲存</div>
+		
+		<div class="edit-controls">
+			<button class="btn btn-primary" id="editBtn" onclick="toggleEditMode()">編輯模式</button>
+			<button class="btn btn-success" id="saveBtn" onclick="saveItinerary()" style="display: none;">儲存</button>
+			<button class="btn btn-danger" id="cancelBtn" onclick="cancelEdit()" style="display: none;">取消</button>
+		</div>
+		
+		<h1 id="title">日本關西四國行程</h1>
+		<p id="subtitle">2025年11月22日 - 11月29日 (8天7夜)</p>
+	</div>
+	
+	<div class="main-layout">
+		<div class="left-column">
+			<div class="container">
+				<!-- 主要內容區域 -->
+				<div class="timeline-section">
+					<div class="timeline-header">行程時間軸</div>
+					<div class="timeline" id="timeline">
+						<!-- 動態載入內容 -->
+						<div class="loading-placeholder" style="padding: 40px; text-align: center; color: #718096;">
+							載入中...
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<!-- 右欄備註區 -->
+		<div class="right-column">
+			<div class="notes-container">
+				<div class="notes-header">
+					<h2 style="margin: 0; color: #2d3748; font-size: 1.5em;">快速提示</h2>
+				</div>
+				<div class="notes-content" id="notesContent">
+					<div style="padding: 20px; color: #718096; line-height: 1.6;">
+						<h3 style="color: #4a5568; margin-bottom: 15px;">📝 如何使用備註功能：</h3>
+						<ul style="margin-left: 20px; margin-bottom: 20px;">
+							<li style="margin-bottom: 8px;">點擊行程項目右側的 📝 按鈕展開備註</li>
+							<li style="margin-bottom: 8px;">可以添加重要提醒、網站連結和一般筆記</li>
+							<li style="margin-bottom: 8px;">支援三種重要性等級：重要、普通、參考</li>
+							<li style="margin-bottom: 8px;">按 ESC 鍵可快速關閉所有備註面板</li>
+						</ul>
+						
+						<h3 style="color: #4a5568; margin-bottom: 15px;">🔧 編輯功能：</h3>
+						<ul style="margin-left: 20px; margin-bottom: 20px;">
+							<li style="margin-bottom: 8px;">點擊「編輯模式」可修改行程內容</li>
+							<li style="margin-bottom: 8px;">使用 Ctrl+S 快速儲存</li>
+							<li style="margin-bottom: 8px;">使用 Ctrl+E 快速切換編輯模式</li>
+						</ul>
+						
+						<h3 style="color: #4a5568; margin-bottom: 15px;">💡 實用技巧：</h3>
+						<ul style="margin-left: 20px;">
+							<li style="margin-bottom: 8px;">備註內容若為網址會自動變成可點擊連結</li>
+							<li style="margin-bottom: 8px;">重要備註用紅色標籤，容易識別</li>
+							<li style="margin-bottom: 8px;">備註數量會顯示在按鈕上</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 
-    <!-- 載入 JavaScript 檔案 -->
-    <script src="js/itinerary.js"></script>
-    <script src="js/notification.js"></script>
-    
-    <!-- 初始化腳本 -->
-    <script>
-        // 頁面載入時初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 應用程式啟動中...');
-            
-            // 載入行程資料
-            if (typeof loadItinerary === 'function') {
-                loadItinerary();
-            } else {
-                console.error('loadItinerary 函數未找到');
-            }
-            
-            // 啟動通知客戶端
-            if (window.notification && window.notification.client()) {
-                window.notification.client().start();
-            }
-            
-            console.log('✅ 應用程式初始化完成');
-        });
-        
-        // 全域錯誤處理
-        window.addEventListener('error', function(event) {
-            console.error('全域錯誤:', event.error);
-            
-            // 顯示用戶友善的錯誤訊息
-            if (window.notification) {
-                window.notification.showNotification('應用程式發生錯誤，請重新整理頁面', 'error', 5000);
-            }
-        });
-        
-        // 未捕捉的 Promise 錯誤
-        window.addEventListener('unhandledrejection', function(event) {
-            console.error('未處理的 Promise 錯誤:', event.reason);
-            event.preventDefault(); // 防止錯誤出現在控制台
-        });
-        
-        // 效能監控 (選用)
-        if ('performance' in window) {
-            window.addEventListener('load', function() {
-                const loadTime = performance.now();
-                console.log(`📊 頁面載入時間: ${Math.round(loadTime)}ms`);
-            });
-        }
-    </script>
+	<!-- 載入 JavaScript 檔案 -->
+	<script src="js/itinerary.js"></script>
+	<script src="js/notification.js"></script>
+	
+	<!-- 初始化腳本 -->
+	<script>
+		// 頁面載入時初始化
+		document.addEventListener('DOMContentLoaded', function() {
+			console.log('🚀 應用程式啟動中...');
+			
+			// 載入行程資料
+			if (typeof loadItinerary === 'function') {
+				loadItinerary();
+			} else {
+				console.error('loadItinerary 函數未找到');
+			}
+			
+			// 啟動通知客戶端
+			if (window.notification && window.notification.client()) {
+				window.notification.client().start();
+			}
+			
+			console.log('✅ 應用程式初始化完成');
+		});
+		
+		// 全域錯誤處理
+		window.addEventListener('error', function(event) {
+			console.error('全域錯誤:', event.error);
+			
+			// 顯示用戶友善的錯誤訊息
+			if (window.notification) {
+				window.notification.showNotification('應用程式發生錯誤，請重新整理頁面', 'error', 5000);
+			}
+		});
+		
+		// 未捕捉的 Promise 錯誤
+		window.addEventListener('unhandledrejection', function(event) {
+			console.error('未處理的 Promise 錯誤:', event.reason);
+			event.preventDefault(); // 防止錯誤出現在控制台
+		});
+		
+		// 效能監控 (選用)
+		if ('performance' in window) {
+			window.addEventListener('load', function() {
+				const loadTime = performance.now();
+				console.log(`📊 頁面載入時間: ${Math.round(loadTime)}ms`);
+			});
+		}
+	</script>
 </body>
 </html>

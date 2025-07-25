@@ -16,15 +16,45 @@ body {
 	margin: 0 auto;
 	padding: 20px;
 }
+.notes-container
+{
+	max-width: 300px;
+	margin: 0 auto;
+	padding: 20px;
+}
 
 .header {
 	background: white;
 	padding: 30px;
-	border-radius: 12px;
+	border-radius: 4px;
 	box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 	margin-bottom: 20px;
 	text-align: center;
 	position: relative;
+}
+
+.notes-header {
+	background: white;
+	padding: 30px;
+	border-radius: 4px;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+	margin-bottom: 20px;
+	text-align: center;
+	position: relative;
+}
+
+/* 主要布局思路*/
+.main-layout {
+    display: flex;
+    gap: 20px;
+}
+
+.left-column {
+    flex: 2;
+}
+
+.right-column {
+    flex: 1;
 }
 
 .header h1 {
@@ -40,20 +70,19 @@ body {
 }
 
 .day-header::before {
-	content: '';                      /* 空內容，用來畫三角形 */
-	width: 0;                         /* 寬度為0 */
-	height: 0;                        /* 高度為0 */
-	border-left: 6px solid #718096;   /* 左邊框就是三角形的顏色部分 */
-	border-top: 4px solid transparent;    /* 上下邊框透明，形成三角形 */
+	content: '';
+	width: 0;
+	height: 0;
+	border-left: 6px solid #718096;
+	border-top: 4px solid transparent;
 	border-bottom: 4px solid transparent;
-	margin-right: 10px;               /* 與文字的間距 */
-	transition: transform 0.2s ease;  /* 旋轉動畫效果 */
-	transform: rotate(90deg);         /* 默認向下（90度旋轉） */
+	margin-right: 10px;
+	transition: transform 0.2s ease;
+	transform: rotate(90deg);
 }
 
-/* 收合狀態的三角形樣式 */
 .day-header.collapsed::before {
-	transform: rotate(0deg);        /* 收合時向右（0度） */
+	transform: rotate(0deg);
 }
 
 .edit-controls {
@@ -128,7 +157,7 @@ body {
 
 .timeline-section {
 	background: white;
-	border-radius: 12px;
+	border-radius: 4px;
 	box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 	overflow: hidden;
 }
@@ -177,13 +206,20 @@ body {
 	padding: 15px 20px;
 	border-bottom: 1px solid #f1f5f9;
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	gap: 15px;
 	position: relative;
+	flex-wrap: wrap;
 }
 
 .timeline-item:last-child {
 	border-bottom: none;
+}
+
+.timeline-item .timeline-item-title {
+    display: flex;
+    align-items: center;
+	gap: 10px;
 }
 
 /* 修復後的時間區域 - 比例1 */
@@ -277,6 +313,193 @@ body {
 	opacity: 1;
 }
 
+/* 備註按鈕區域 */
+.notes-section {
+	flex-shrink: 0;
+	margin-left: auto;
+	padding-left: 15px;
+}
+
+.notes-toggle-btn {
+	background: #f7fafc;
+	border: 1px solid #e2e8f0;
+	border-radius: 20px;
+	padding: 6px 12px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	font-size: 12px;
+	transition: all 0.2s;
+}
+
+.notes-toggle-btn:hover {
+	background: #edf2f7;
+	border-color: #cbd5e0;
+}
+
+.notes-toggle-btn.active {
+	background: #4299e1;
+	color: white;
+	border-color: #4299e1;
+}
+
+.notes-icon {
+	font-size: 14px;
+}
+
+.notes-count {
+	background: #e53e3e;
+	color: white;
+	border-radius: 10px;
+	padding: 2px 6px;
+	font-size: 10px;
+	min-width: 16px;
+	text-align: center;
+}
+
+.notes-count.zero {
+	background: #a0aec0;
+}
+
+/* 備註展開面板 */
+.notes-panel {
+	width: 100%;
+	margin-top: 15px;
+	background: #f8fafc;
+	border: 1px solid #e2e8f0;
+	border-radius: 8px;
+	padding: 15px;
+	display: none;
+	animation: slideDown 0.3s ease;
+}
+
+.notes-panel.show {
+	display: block;
+}
+
+@keyframes slideDown {
+	from {
+		opacity: 0;
+		transform: translateY(-10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.notes-panel-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 15px;
+	padding-bottom: 10px;
+	border-bottom: 1px solid #e2e8f0;
+}
+
+.notes-panel-header h4 {
+	color: #2d3748;
+	font-size: 14px;
+	margin: 0;
+}
+
+/* 備註表格樣式 */
+.notes-table-container {
+	overflow-x: auto;
+	max-height: 300px;
+	overflow-y: auto;
+}
+
+.notes-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 12px;
+}
+
+.notes-table td {
+	padding: 8px 12px;
+	border-bottom: 1px solid #e2e8f0;
+	vertical-align: middle;
+}
+
+.notes-table tr:hover {
+	background: #f7fafc;
+}
+
+.notes-table tr:first-child td {
+	border-top: 1px solid #e2e8f0;
+}
+
+/* 重要性標籤 */
+.priority-tag {
+	display: inline-block;
+	padding: 3px 8px;
+	border-radius: 12px;
+	font-size: 10px;
+	font-weight: 600;
+	text-align: center;
+	min-width: 40px;
+}
+
+.priority-high {
+	color: #e53e3e;
+	background: #fed7d7;
+}
+
+.priority-medium {
+	color: #d69e2e;
+	background: #faf089;
+}
+
+.priority-low {
+	color: #38a169;
+	background: #c6f6d5;
+}
+
+/* 內容樣式 */
+.note-content {
+	max-width: 200px;
+	word-wrap: break-word;
+}
+
+.note-link {
+	color: #4299e1;
+	text-decoration: none;
+}
+
+.note-link:hover {
+	text-decoration: underline;
+}
+
+/* 操作按鈕 */
+.note-actions {
+	display: flex;
+	justify-content: flex-end;  /* 改為這個 */
+	gap: 5px;
+}
+
+.btn-icon {
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 4px;
+	border-radius: 4px;
+	font-size: 12px;
+}
+
+.btn-icon:hover {
+	background: #e2e8f0;
+}
+
+/* 空狀態 */
+.notes-empty {
+	text-align: center;
+	color: #718096;
+	font-style: italic;
+	padding: 20px;
+}
+
 /* 統一的可編輯樣式 */
 .editable {
 	background: transparent;
@@ -313,7 +536,7 @@ body {
 	color: #718096;
 	padding: 15px;
 	cursor: pointer;
-	border-radius: 6px;
+	border-radius: 4px;
 	margin: 10px 0;
 	font-size: 14px;
 	transition: all 0.2s;
@@ -333,7 +556,52 @@ body {
 	margin-left: 10px;
 }
 
+/* 備註新增表單 */
+.note-form {
+	background: white;
+	border: 1px solid #e2e8f0;
+	border-radius: 6px;
+	padding: 15px;
+	margin-bottom: 15px;
+}
+
+.note-form-row {
+	display: flex;
+	gap: 10px;
+	margin-bottom: 10px;
+}
+
+.note-form-row input,
+.note-form-row select,
+.note-form-row textarea {
+	padding: 6px 10px;
+	border: 1px solid #d1d5db;
+	border-radius: 4px;
+	font-size: 12px;
+}
+
+.note-form-row input[type="text"] {
+	flex: 1;
+}
+
+.note-form-row textarea {
+	flex: 1;
+	min-height: 60px;
+	resize: vertical;
+}
+
+.note-form-actions {
+	display: flex;
+	gap: 10px;
+	justify-content: flex-end;
+}
+
 @media (max-width: 768px) {
+	
+    .main-layout {
+        flex-direction: column;
+    }
+	
 	.container {
 		padding: 10px;
 	}
@@ -344,6 +612,11 @@ body {
 		gap: 10px;
 	}
 	
+	.timeline-item .timeline-item-title {
+		display: flex;
+		align-items: center;
+	}
+	
 	.time-section,
 	.location-section,
 	.activity-section {
@@ -352,17 +625,36 @@ body {
 		max-width: none;
 	}
 	
+	.notes-section {
+		margin-left: 0;
+		margin-top: 10px;
+		padding-left: 0;
+		width: 100%;
+	}
+	
+	.notes-table {
+		font-size: 11px;
+	}
+	
+	.notes-table td {
+		padding: 6px 8px;
+	}
+	
+	.note-content {
+		max-width: 150px;
+	}
+	
 	/* 手機版三角形位置調整 */
 	.day-header::before {
-		position: absolute;             /* 改為絕對定位 */
-		right: 20px;                   /* 放到右側 */
-		top: 50%;                      /* 垂直置中 */
-		transform: translateY(-50%) rotate(90deg);  /* 置中+旋轉 */
-		margin-right: 0;               /* 移除右邊距 */
+		position: absolute;
+		right: 20px;
+		top: 50%;
+		transform: translateY(-50%) rotate(90deg);
+		margin-right: 0;
 	}
 
 	.day-header.collapsed::before {
-		transform: translateY(-50%) rotate(0deg);   /* 收合時也要保持置中 */
+		transform: translateY(-50%) rotate(0deg);
 	}
 	
 	.day-header {

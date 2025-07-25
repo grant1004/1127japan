@@ -2,6 +2,41 @@ let currentItinerary = null;
 let isEditMode = false;
 let originalItinerary = null;
 
+// 備註資料結構
+let itemNotes = {
+	"item1": [
+		{
+			id: "note1",
+			priority: "high",
+			description: "交通提醒",
+			content: "https://www.kansai-airport.or.jp/",
+			type: "link"
+		},
+		{
+			id: "note2",
+			priority: "medium",
+			description: "注意事項",
+			content: "記得帶護照影本",
+			type: "text"
+		}
+	],
+	"item3": [
+		{
+			id: "note3",
+			priority: "low",
+			description: "美食推薦",
+			content: "https://tabelog.com/osaka/",
+			type: "link"
+		}
+	]
+};
+
+// 優先級配置
+const priorityConfig = {
+	high: { label: "重要", color: "#e53e3e", bgColor: "#fed7d7" },
+	medium: { label: "普通", color: "#d69e2e", bgColor: "#faf089" },
+	low: { label: "參考", color: "#38a169", bgColor: "#c6f6d5" }
+};
 
 // 測試資料
 const defaultItinerary = {
@@ -96,13 +131,19 @@ async function saveItinerary() {
         // 收集編輯的資料
         collectEditedData();
         
+        // 包含備註資料
+        const dataToSave = {
+            ...currentItinerary,
+            notes: itemNotes
+        };
+        
         // 真正儲存到伺服器
         const response = await fetch('/api/itinerary', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(currentItinerary)
+            body: JSON.stringify(dataToSave)
         });
         
         if (!response.ok) {
@@ -120,7 +161,10 @@ async function saveItinerary() {
         
         // 可選：如果伺服器儲存失敗，暫時存到本地
         try {
-            localStorage.setItem('itinerary_backup', JSON.stringify(currentItinerary));
+            localStorage.setItem('itinerary_backup', JSON.stringify({
+                ...currentItinerary,
+                notes: itemNotes
+            }));
             console.log('已備份到本地儲存');
         } catch (localError) {
             console.error('本地備份也失敗:', localError);
@@ -149,7 +193,6 @@ function toggleEditMode() {
 		exitEditMode();
 	}
 }
-
 
 // 進入編輯模式
 function enterEditMode() {
@@ -182,7 +225,6 @@ function cancelEdit() {
 	exitEditMode();
 }
 
-
 // 讓元素可編輯
 function makeEditable() {
 	// 標題可編輯
@@ -194,7 +236,6 @@ function makeEditable() {
 	title.classList.add('editable');
 	subtitle.classList.add('editable');
 }
-
 
 // 收集編輯的資料
 function collectEditedData() {
@@ -254,6 +295,7 @@ function renderItinerary() {
 // 渲染時間軸項目
 function renderTimelineItem(item) {
 	const typeClass = `type-${item.type}`;
+	const noteCount = getNoteCount(item.id);
 	
 	if (isEditMode) {
 		return `
@@ -276,17 +318,26 @@ function renderTimelineItem(item) {
 					<option value="accommodation" ${item.type === 'accommodation' ? 'selected' : ''}>住宿</option>
 					<option value="event" ${item.type === 'event' ? 'selected' : ''}>活動</option>
 				</select>
+				<div class="notes-section">
+					<button class="notes-toggle-btn" onclick="toggleNotes('${item.id}')" data-item-id="${item.id}">
+						<span class="notes-icon">📝</span>
+						<span class="notes-count ${noteCount === 0 ? 'zero' : ''}">${noteCount}</span>
+					</button>
+				</div>
 				<div class="item-controls">
 					<button class="btn btn-danger btn-small" onclick="deleteItem('${item.id}')">刪除</button>
 				</div>
+				${renderNotesPanel(item.id)}
 			</div>
 		`;
 	} else {
 		return `
 			<div class="timeline-item" data-item-id="${item.id}">
-				<div class="location-type ${typeClass}"></div>
-				<div class="time-section">
-					<div class="time-badge">${item.time}</div>
+				<div class="timeline-item-title"> 
+					<div class="location-type ${typeClass}"></div>
+					<div class="time-section">
+						<div class="time-badge">${item.time}</div>
+					</div>
 				</div>
 				<div class="location-section">
 					<div class="location-name">${item.name}</div>
@@ -294,8 +345,210 @@ function renderTimelineItem(item) {
 				<div class="activity-section">
 					<div class="location-activity">${item.activity}</div>
 				</div>
+				<div class="notes-section">
+					<button class="notes-toggle-btn" onclick="toggleNotes('${item.id}')" data-item-id="${item.id}">
+						<span class="notes-icon">📝</span>
+						<span class="notes-count ${noteCount === 0 ? 'zero' : ''}">${noteCount}</span>
+					</button>
+				</div>
+				${renderNotesPanel(item.id)}
 			</div>
 		`;
+	}
+}
+
+// 渲染備註面板
+function renderNotesPanel(itemId) {
+	return `
+		<div class="notes-panel" id="notes-${itemId}">
+			<div class="notes-panel-header">
+				<h4>備註清單</h4>
+				<button class="btn btn-small btn-success" onclick="showAddNoteForm('${itemId}')">+ 新增</button>
+			</div>
+			<div id="note-form-${itemId}" style="display: none;">
+				<div class="note-form">
+					<div class="note-form-row">
+						<select id="priority-${itemId}">
+							<option value="high">重要</option>
+							<option value="medium" selected>普通</option>
+							<option value="low">參考</option>
+						</select>
+						<input type="text" id="description-${itemId}" placeholder="描述" />
+					</div>
+					<div class="note-form-row">
+						<textarea id="content-${itemId}" placeholder="內容（可以是網址或文字）"></textarea>
+					</div>
+					<div class="note-form-actions">
+						<button class="btn btn-small btn-success" onclick="saveNote('${itemId}')">儲存</button>
+						<button class="btn btn-small" onclick="cancelAddNote('${itemId}')">取消</button>
+					</div>
+				</div>
+			</div>
+			<div class="notes-table-container">
+				<table class="notes-table">
+					<tbody id="notes-tbody-${itemId}">
+						<!-- 動態載入備註內容 -->
+					</tbody>
+				</table>
+			</div>
+		</div>
+	`;
+}
+
+// 獲取備註數量
+function getNoteCount(itemId) {
+	return (itemNotes[itemId] || []).length;
+}
+
+// 切換備註面板顯示
+function toggleNotes(itemId) {
+	const panel = document.getElementById(`notes-${itemId}`);
+	const btn = document.querySelector(`[onclick="toggleNotes('${itemId}')"]`);
+	
+	// 先關閉其他所有面板
+	document.querySelectorAll('.notes-panel.show').forEach(otherPanel => {
+		if (otherPanel.id !== `notes-${itemId}`) {
+			otherPanel.classList.remove('show');
+			const otherBtn = document.querySelector(`[onclick="toggleNotes('${otherPanel.id.replace('notes-', '')}')"]`);
+			if (otherBtn) otherBtn.classList.remove('active');
+		}
+	});
+	
+	if (panel.classList.contains('show')) {
+		panel.classList.remove('show');
+		btn.classList.remove('active');
+	} else {
+		panel.classList.add('show');
+		btn.classList.add('active');
+		renderNotesTable(itemId);
+	}
+}
+
+// 渲染備註表格
+function renderNotesTable(itemId) {
+	const tbody = document.getElementById(`notes-tbody-${itemId}`);
+	const notes = itemNotes[itemId] || [];
+	
+	if (notes.length === 0) {
+		tbody.innerHTML = `
+			<tr>
+				<td colspan="4" class="notes-empty">尚無備註</td>
+			</tr>
+		`;
+		return;
+	}
+	
+	tbody.innerHTML = notes.map(note => `
+		<tr>
+			<td>
+				<span class="priority-tag priority-${note.priority}">
+					${priorityConfig[note.priority].label}
+				</span>
+			</td>
+			<td>${note.description}</td>
+			<td class="note-content">
+				${note.type === 'link' 
+					? `<a href="${note.content}" target="_blank" class="note-link">${note.content}</a>`
+					: note.content
+				}
+			</td>
+			<td class="note-actions">
+				<button class="btn-icon" onclick="editNote('${itemId}', '${note.id}')" title="編輯">✏️</button>
+				<button class="btn-icon" onclick="deleteNote('${itemId}', '${note.id}')" title="刪除">🗑️</button>
+			</td>
+		</tr>
+	`).join('');
+}
+
+// 顯示新增備註表單
+function showAddNoteForm(itemId) {
+	const form = document.getElementById(`note-form-${itemId}`);
+	form.style.display = 'block';
+	
+	// 清空表單
+	document.getElementById(`priority-${itemId}`).value = 'medium';
+	document.getElementById(`description-${itemId}`).value = '';
+	document.getElementById(`content-${itemId}`).value = '';
+	
+	// 聚焦到描述欄位
+	document.getElementById(`description-${itemId}`).focus();
+}
+
+// 取消新增備註
+function cancelAddNote(itemId) {
+	const form = document.getElementById(`note-form-${itemId}`);
+	form.style.display = 'none';
+}
+
+// 儲存備註
+function saveNote(itemId) {
+	const priority = document.getElementById(`priority-${itemId}`).value;
+	const description = document.getElementById(`description-${itemId}`).value.trim();
+	const content = document.getElementById(`content-${itemId}`).value.trim();
+	
+	if (!description || !content) {
+		alert('請填寫描述和內容');
+		return;
+	}
+	
+	const newNote = {
+		id: `note_${Date.now()}`,
+		priority: priority,
+		description: description,
+		content: content,
+		type: content.match(/^https?:\/\//) ? 'link' : 'text'
+	};
+	
+	if (!itemNotes[itemId]) {
+		itemNotes[itemId] = [];
+	}
+	
+	itemNotes[itemId].push(newNote);
+	renderNotesTable(itemId);
+	updateNotesCount(itemId);
+	cancelAddNote(itemId);
+}
+
+// 編輯備註
+function editNote(itemId, noteId) {
+	const note = itemNotes[itemId]?.find(n => n.id === noteId);
+	if (!note) return;
+	
+	const newDescription = prompt('編輯描述：', note.description);
+	if (newDescription === null) return;
+	
+	const newContent = prompt('編輯內容：', note.content);
+	if (newContent === null) return;
+	
+	const newPriority = prompt('重要性（high/medium/low）：', note.priority);
+	if (newPriority === null) return;
+	
+	note.description = newDescription.trim();
+	note.content = newContent.trim();
+	note.priority = newPriority || 'medium';
+	note.type = note.content.match(/^https?:\/\//) ? 'link' : 'text';
+	
+	renderNotesTable(itemId);
+}
+
+// 刪除備註
+function deleteNote(itemId, noteId) {
+	if (!confirm('確定要刪除這個備註嗎？')) return;
+	
+	if (itemNotes[itemId]) {
+		itemNotes[itemId] = itemNotes[itemId].filter(note => note.id !== noteId);
+		renderNotesTable(itemId);
+		updateNotesCount(itemId);
+	}
+}
+
+// 更新備註數量顯示
+function updateNotesCount(itemId) {
+	const countEl = document.querySelector(`[onclick="toggleNotes('${itemId}')"] .notes-count`);
+	if (countEl) {
+		const count = getNoteCount(itemId);
+		countEl.textContent = count;
+		countEl.className = `notes-count ${count === 0 ? 'zero' : ''}`;
 	}
 }
 
@@ -316,13 +569,17 @@ function addNewItem(dayId) {
 	}
 }
 
-
 // 刪除項目
 function deleteItem(itemId) {
-	if (confirm('確定要刪除這個項目嗎？')) {
+	if (confirm('確定要刪除這個項目嗎？相關備註也會被刪除。')) {
+		// 刪除項目
 		currentItinerary.days.forEach(day => {
 			day.items = day.items.filter(item => item.id !== itemId);
 		});
+		
+		// 刪除相關備註
+		delete itemNotes[itemId];
+		
 		renderItinerary();
 	}
 }
@@ -330,19 +587,19 @@ function deleteItem(itemId) {
 // 切換日期顯示
 function toggleDay(dayId) {
 	const content = document.getElementById(`content-${dayId}`);
-	const header = document.querySelector(`[onclick="toggleDay('${dayId}')"]`);  // 👈 新增：找到標題元素
+	const header = document.querySelector(`[onclick="toggleDay('${dayId}')"]`);
 	const isOpen = content.style.display !== 'none';
 	
 	if (isOpen) {
 		content.style.display = 'none';
-		header.classList.add('collapsed');     // 👈 新增：添加收合樣式
+		header.classList.add('collapsed');
 	} else {
 		content.style.display = 'block';
-		header.classList.remove('collapsed');  // 👈 新增：移除收合樣式
+		header.classList.remove('collapsed');
 	}
 }
 
- // 添加編輯監聽器
+// 添加編輯監聽器
 function addEditableListeners() {
 	// 類型選擇器變更事件
 	document.querySelectorAll('.type-select').forEach(select => {
@@ -367,6 +624,29 @@ document.addEventListener('keydown', function(e) {
             toggleEditMode();
         }
     }
+    
+    // ESC 鍵關閉所有備註面板
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.notes-panel.show').forEach(panel => {
+            panel.classList.remove('show');
+        });
+        document.querySelectorAll('.notes-toggle-btn.active').forEach(btn => {
+            btn.classList.remove('active');
+        });
+    }
+});
+
+// 點擊頁面其他地方關閉備註面板
+document.addEventListener('click', function(e) {
+    // 如果點擊的不是備註按鈕或備註面板內容，就關閉面板
+    if (!e.target.closest('.notes-section') && !e.target.closest('.notes-panel')) {
+        document.querySelectorAll('.notes-panel.show').forEach(panel => {
+            panel.classList.remove('show');
+        });
+        document.querySelectorAll('.notes-toggle-btn.active').forEach(btn => {
+            btn.classList.remove('active');
+        });
+    }
 });
 
 // 導出給全域使用的函數
@@ -376,6 +656,9 @@ window.itinerary = {
     toggleEditMode,
     addNewItem,
     deleteItem,
-    toggleDay
+    toggleDay,
+    toggleNotes,
+    addNote: showAddNoteForm,
+    editNote,
+    deleteNote
 };
-
