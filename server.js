@@ -118,7 +118,6 @@ async function ensureDataDir() {
     }
 }
 
-// 修改 saveItineraryToDb 函數
 async function saveItineraryToDb(itineraryData) {
     try {
         const query = `
@@ -131,7 +130,7 @@ async function saveItineraryToDb(itineraryData) {
             itineraryData.subtitle,
             { 
                 days: itineraryData.days,
-                notes: itineraryData.notes || {}  // 🔥 新增備註支援
+                notes: itineraryData.notes || {}  // 🔥 確保包含備註
             }
         ];
         
@@ -144,7 +143,6 @@ async function saveItineraryToDb(itineraryData) {
     }
 }
 
-// 修改 updateItineraryInDb 函數
 async function updateItineraryInDb(itineraryData) {
     const client = await pool.connect();
     
@@ -162,13 +160,13 @@ async function updateItineraryInDb(itineraryData) {
             itineraryData.subtitle,
             { 
                 days: itineraryData.days,
-                notes: itineraryData.notes || {}  // 🔥 新增備註支援
+                notes: itineraryData.notes || {}  // 🔥 確保包含備註
             }
         ];
         
         await client.query(updateQuery, values);
         
-        // 通知部分保持不變...
+        // 通知邏輯保持不變
         const notifyPayload = JSON.stringify({
             action: 'update',
             title: itineraryData.title,
@@ -189,7 +187,7 @@ async function updateItineraryInDb(itineraryData) {
     }
 }
 
-// 修改 loadItineraryFromDb 函數
+// 在您的後端程式碼中修改
 async function loadItineraryFromDb() {
     try {
         const query = 'SELECT * FROM itinerary ORDER BY updated_at DESC LIMIT 1';
@@ -200,11 +198,13 @@ async function loadItineraryFromDb() {
         }
         
         const row = result.rows[0];
+        
+        // 🔥 修正：返回完整的資料結構，包含 notes
         return {
             title: row.title,
             subtitle: row.subtitle,
-            days: row.data.days,
-            notes: row.data.notes || {}  // 🔥 新增備註讀取
+            days: row.data.days || [],
+            notes: row.data.notes || {}  // 從 data.notes 獲取備註
         };
     } catch (error) {
         console.error('從資料庫讀取失敗:', error);
@@ -218,7 +218,7 @@ function getDefaultItinerary() {
     return {
         title: "日本關西四國行程",
         subtitle: "2025年11月22日 - 11月29日 (8天7夜)",
-        notes: {  // 🔥 新增預設備註
+        notes: {  // 🔥 新增：預設備註結構
             "item1": [
                 {
                     id: "note1",
@@ -487,6 +487,7 @@ function getDefaultItinerary() {
    
     };
 }
+
 
 // API 路由
 

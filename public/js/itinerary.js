@@ -106,17 +106,62 @@ async function loadItinerary() {
 		try {
 			const response = await fetch('/api/itinerary');
 			if (response.ok) {
-				currentItinerary = await response.json();
+				const data = await response.json();
+				
+				// 🔥 修正：根據實際資料庫結構載入
+				currentItinerary = {
+					title: data.title,
+					subtitle: data.subtitle,
+					days: data.days
+				};
+				
+				// 🔥 修正：備註資料直接從 API 回應中獲取
+				itemNotes = data.notes || {};
+				
+				console.log('✅ 從 API 載入資料:', { 
+					title: data.title, 
+					daysCount: data.days?.length, 
+					notesCount: Object.keys(itemNotes).length 
+				});
 			} else {
 				throw new Error('API not available');
 			}
 		} catch (apiError) {
 			console.log('API載入失敗，使用預設資料:', apiError.message);
 			currentItinerary = defaultItinerary;
+			// 使用預設備註資料
+			itemNotes = {
+				"item1": [
+					{
+						id: "note1",
+						priority: "high",
+						description: "交通提醒",
+						content: "https://www.kansai-airport.or.jp/",
+						type: "link"
+					},
+					{
+						id: "note2",
+						priority: "medium",
+						description: "注意事項",
+						content: "記得帶護照影本",
+						type: "text"
+					}
+				],
+				"item3": [
+					{
+						id: "note3",
+						priority: "low",
+						description: "美食推薦",
+						content: "https://tabelog.com/osaka/",
+						type: "link"
+					}
+				]
+			};
 		}
 		
 		renderItinerary();
 		setStatus('saved', '已載入');
+		console.log('📝 載入的備註資料:', itemNotes);
 	} catch (error) {
 		console.error('載入行程失敗:', error);
 		setStatus('error', '載入失敗');
@@ -493,7 +538,7 @@ function cancelAddNote(itemId) {
 }
 
 // 儲存備註
-function saveNote(itemId) {
+async function saveNote(itemId) {
 	const priority = document.getElementById(`priority-${itemId}`).value;
 	const description = document.getElementById(`description-${itemId}`).value.trim();
 	const content = document.getElementById(`content-${itemId}`).value.trim();
@@ -519,10 +564,22 @@ function saveNote(itemId) {
 	renderNotesTable(itemId);
 	updateNotesCount(itemId);
 	cancelAddNote(itemId);
+	
+	// 🔥 新增：儲存到資料庫
+	try {
+		setStatus('saving', '儲存備註中...');
+		await saveItinerary(); // 這會包含備註資料一起儲存
+		setStatus('saved', '備註已儲存');
+	} catch (error) {
+		console.error('儲存備註失敗:', error);
+		setStatus('error', '儲存備註失敗');
+		// 可選：顯示錯誤提示
+		alert('儲存備註失敗，請稍後重試');
+	}
 }
 
 // 編輯備註
-function editNote(itemId, noteId) {
+async function editNote(itemId, noteId) {
 	const note = itemNotes[itemId]?.find(n => n.id === noteId);
 	if (!note) return;
 	
@@ -535,22 +592,45 @@ function editNote(itemId, noteId) {
 	const newPriority = prompt('重要性（high/medium/low）：', note.priority);
 	if (newPriority === null) return;
 	
+	// 更新本地資料
 	note.description = newDescription.trim();
 	note.content = newContent.trim();
 	note.priority = newPriority || 'medium';
 	note.type = note.content.match(/^https?:\/\//) ? 'link' : 'text';
 	
 	renderNotesTable(itemId);
+	
+	// 🔥 新增：儲存到資料庫
+	try {
+		setStatus('saving', '更新備註中...');
+		await saveItinerary();
+		setStatus('saved', '備註已更新');
+	} catch (error) {
+		console.error('更新備註失敗:', error);
+		setStatus('error', '更新備註失敗');
+		alert('更新備註失敗，請稍後重試');
+	}
 }
 
 // 刪除備註
-function deleteNote(itemId, noteId) {
+async function deleteNote(itemId, noteId) {
 	if (!confirm('確定要刪除這個備註嗎？')) return;
 	
 	if (itemNotes[itemId]) {
 		itemNotes[itemId] = itemNotes[itemId].filter(note => note.id !== noteId);
 		renderNotesTable(itemId);
 		updateNotesCount(itemId);
+		
+		// 🔥 新增：儲存到資料庫
+		try {
+			setStatus('saving', '刪除備註中...');
+			await saveItinerary();
+			setStatus('saved', '備註已刪除');
+		} catch (error) {
+			console.error('刪除備註失敗:', error);
+			setStatus('error', '刪除備註失敗');
+			alert('刪除備註失敗，請稍後重試');
+		}
 	}
 }
 
@@ -686,10 +766,10 @@ function reorderItems(draggedData, targetData, insertBefore) {
 	renderItinerary();
 	
 	// 自動儲存
-    // setTimeout(() => {
-	// 	console.log('自動儲存...');
-	// 	saveItinerary();
-	// }, 300);
+	setTimeout(() => {
+		console.log('自動儲存...');
+		saveItinerary();
+	}, 300);
 }
 
 // 新增項目
