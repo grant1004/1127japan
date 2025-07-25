@@ -1,382 +1,379 @@
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
 
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f8fafc;
-            color: #1a202c;
-            line-height: 1.6;
-        }
-        
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        .header {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-            text-align: center;
-            position: relative;
-        }
-        
-        .header h1 {
-            font-size: 2em;
-            color: #2d3748;
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-        
-        .header p {
-            color: #718096;
-            font-size: 1.1em;
-        }
-		
-		.day-header::before {
-			content: '';                    /* 空內容，用來畫三角形 */
-			width: 0;                      /* 寬度為0 */
-			height: 0;                     /* 高度為0 */
-			border-left: 6px solid #718096;  /* 左邊框就是三角形的顏色部分 */
-			border-top: 4px solid transparent;    /* 上下邊框透明，形成三角形 */
-			border-bottom: 4px solid transparent;
-			margin-right: 10px;            /* 與文字的間距 */
-			transition: transform 0.2s ease;  /* 旋轉動畫效果 */
-			transform: rotate(90deg);       /* 默認向下（90度旋轉） */
-		}
+body {
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	background: #f8fafc;
+	color: #1a202c;
+	line-height: 1.6;
+}
 
-		/* 收合狀態的三角形樣式 */
-		.day-header.collapsed::before {
-			transform: rotate(0deg);        /* 收合時向右（0度） */
-		}
-        
-        .edit-controls {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            display: flex;
-            gap: 10px;
-        }
-        
-        .btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-        
-        .btn-primary {
-            background: #4299e1;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: #3182ce;
-        }
-        
-        .btn-success {
-            background: #48bb78;
-            color: white;
-        }
-        
-        .btn-success:hover {
-            background: #38a169;
-        }
-        
-        .btn-danger {
-            background: #e53e3e;
-            color: white;
-        }
-        
-        .btn-danger:hover {
-            background: #c53030;
-        }
-        
-        .btn-small {
-            padding: 4px 8px;
-            font-size: 12px;
-        }
-        
-        .status-indicator {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-        
-        .status-saved {
-            background: #c6f6d5;
-            color: #22543d;
-        }
-        
-        .status-saving {
-            background: #fbb6ce;
-            color: #702459;
-        }
-        
-        .timeline-section {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        
-        .timeline-header {
-            background: #4a5568;
-            color: white;
-            padding: 20px;
-            font-size: 1.2em;
-            font-weight: 600;
-        }
-        
-        .timeline {
-            padding: 0;
-        }
-        
-        .day-group {
-            border-bottom: 1px solid #e2e8f0;
-        }
-        
-        .day-group:last-child {
-            border-bottom: none;
-        }
-        
-        .day-header {
-            background: #f7fafc;
-            padding: 15px 20px;
-            border-bottom: 1px solid #e2e8f0;
-            font-weight: 600;
-            color: #2d3748;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .day-header:hover {
-            background: #edf2f7;
-        }
-        
-        .day-content {
-            padding: 0;
-        }
-        
-        .timeline-item {
-            padding: 15px 20px;
-            border-bottom: 1px solid #f1f5f9;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            position: relative;
-        }
-        
-        .timeline-item:last-child {
-            border-bottom: none;
-        }
-        
-        /* 修復後的時間區域 - 比例1 */
-        .time-section {
-            flex: 1;
-            min-width: 100px;
-            max-width: 120px;
-        }
-        
-        .time-badge {
-            background: #e2e8f0;
-            color: #4a5568;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.875em;
-            font-weight: 500;
-            text-align: center;
-            width: 100%;
-        }
-        
-        /* 編輯模式的時間輸入框 */
-        .time-input {
-            background: #e2e8f0;
-            color: #4a5568;
-            padding: 6px 8px;
-            border-radius: 20px;
-            font-size: 0.875em;
-            font-weight: 500;
-            text-align: center;
-            width: 100%;
-            border: 1px solid transparent;
-            font-family: inherit;
-        }
-        
-        .time-input:focus {
-            outline: none;
-            border-color: #4299e1;
-            background: #fff;
-            box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.1);
-        }
-        
-        /* 地點區域 - 比例1 */
-        .location-section {
-            flex: 1;
-            min-width: 120px;
-        }
-        
-        .location-name {
-            font-weight: 600;
-            color: #2d3748;
-            margin-bottom: 2px;
-        }
-        
-        /* 活動內容區域 - 比例5 */
-        .activity-section {
-            flex: 5;
-        }
-        
-        .location-activity {
-            color: #718096;
-            font-size: 0.9em;
-        }
-        
-        .location-type {
-            width: 8px;
-            height: 40px;
-            border-radius: 4px;
-            flex-shrink: 0;
-        }
-        
-        .type-airport { background: #805ad5; }
-        .type-transport { background: #38b2ac; }
-        .type-city { background: #4299e1; }
-        .type-attraction { background: #48bb78; }
-        .type-accommodation { background: #ed8936; }
-        .type-event { background: #e53e3e; }
-        
-        .item-controls {
-            opacity: 0;
-            transition: opacity 0.2s;
-            display: flex;
-            gap: 5px;
-            flex-shrink: 0;
-        }
-        
-        .timeline-item:hover .item-controls {
-            opacity: 1;
-        }
-        
-        .edit-mode .item-controls {
-            opacity: 1;
-        }
-        
-        /* 統一的可編輯樣式 */
-        .editable {
-            background: transparent;
-            border: 1px solid transparent;
-            font-family: inherit;
-            font-size: inherit;
-            color: inherit;
-            width: 100%;
-            padding: 4px 6px;
-            border-radius: 4px;
-            transition: all 0.2s;
-        }
-        
-        .editable:focus {
-            outline: none;
-            background: #fff;
-            border-color: #4299e1;
-            box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.1);
-        }
-        
-        /* 標題區域的特殊處理 */
-        .header .editable {
-            width: auto;
-            display: inline-block;
-            text-align: center;
-            min-width: 200px;
-            padding: 2px 8px;
-        }
-        
-        .add-item-btn {
-            width: 100%;
-            background: #f7fafc;
-            border: 2px dashed #cbd5e0;
-            color: #718096;
-            padding: 15px;
-            cursor: pointer;
-            border-radius: 6px;
-            margin: 10px 0;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-        
-        .add-item-btn:hover {
-            background: #edf2f7;
-            border-color: #a0aec0;
-        }
-        
-        .type-select {
-            padding: 4px 8px;
-            border: 1px solid #cbd5e0;
-            border-radius: 4px;
-            font-size: 12px;
-            background: white;
-            margin-left: 10px;
-        }
-        
-        @media (max-width: 768px) {
-            .container {
-                padding: 10px;
-            }
-            
-            .timeline-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-            
-            .time-section,
-            .location-section,
-            .activity-section {
-                flex: 1;
-                width: 100%;
-                max-width: none;
-            }
-			
-			/* 手機版三角形位置調整 */
-			.day-header::before {
-				position: absolute;             /* 改為絕對定位 */
-				right: 20px;                   /* 放到右側 */
-				top: 50%;                      /* 垂直置中 */
-				transform: translateY(-50%) rotate(90deg);  /* 置中+旋轉 */
-				margin-right: 0;               /* 移除右邊距 */
-			}
+.container {
+	max-width: 900px;
+	margin: 0 auto;
+	padding: 20px;
+}
 
-			.day-header.collapsed::before {
-				transform: translateY(-50%) rotate(0deg);   /* 收合時也要保持置中 */
-			}
-            
-            .day-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 5px;
-            }
-            
-            .edit-controls {
-                position: static;
-                justify-content: center;
-                margin-top: 20px;
-            }
-        }
-    </style>
+.header {
+	background: white;
+	padding: 30px;
+	border-radius: 12px;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+	margin-bottom: 20px;
+	text-align: center;
+	position: relative;
+}
+
+.header h1 {
+	font-size: 2em;
+	color: #2d3748;
+	margin-bottom: 8px;
+	font-weight: 600;
+}
+
+.header p {
+	color: #718096;
+	font-size: 1.1em;
+}
+
+.day-header::before {
+	content: '';                      /* 空內容，用來畫三角形 */
+	width: 0;                         /* 寬度為0 */
+	height: 0;                        /* 高度為0 */
+	border-left: 6px solid #718096;   /* 左邊框就是三角形的顏色部分 */
+	border-top: 4px solid transparent;    /* 上下邊框透明，形成三角形 */
+	border-bottom: 4px solid transparent;
+	margin-right: 10px;               /* 與文字的間距 */
+	transition: transform 0.2s ease;  /* 旋轉動畫效果 */
+	transform: rotate(90deg);         /* 默認向下（90度旋轉） */
+}
+
+/* 收合狀態的三角形樣式 */
+.day-header.collapsed::before {
+	transform: rotate(0deg);        /* 收合時向右（0度） */
+}
+
+.edit-controls {
+	position: absolute;
+	top: 20px;
+	right: 20px;
+	display: flex;
+	gap: 10px;
+}
+
+.btn {
+	padding: 8px 16px;
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
+	font-size: 14px;
+	font-weight: 500;
+	transition: all 0.2s;
+}
+
+.btn-primary {
+	background: #4299e1;
+	color: white;
+}
+
+.btn-primary:hover {
+	background: #3182ce;
+}
+
+.btn-success {
+	background: #48bb78;
+	color: white;
+}
+
+.btn-success:hover {
+	background: #38a169;
+}
+
+.btn-danger {
+	background: #e53e3e;
+	color: white;
+}
+
+.btn-danger:hover {
+	background: #c53030;
+}
+
+.btn-small {
+	padding: 4px 8px;
+	font-size: 12px;
+}
+
+.status-indicator {
+	position: absolute;
+	top: 20px;
+	left: 20px;
+	padding: 6px 12px;
+	border-radius: 20px;
+	font-size: 12px;
+	font-weight: 500;
+}
+
+.status-saved {
+	background: #c6f6d5;
+	color: #22543d;
+}
+
+.status-saving {
+	background: #fbb6ce;
+	color: #702459;
+}
+
+.timeline-section {
+	background: white;
+	border-radius: 12px;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+	overflow: hidden;
+}
+
+.timeline-header {
+	background: #4a5568;
+	color: white;
+	padding: 20px;
+	font-size: 1.2em;
+	font-weight: 600;
+}
+
+.timeline {
+	padding: 0;
+}
+
+.day-group {
+	border-bottom: 1px solid #e2e8f0;
+}
+
+.day-group:last-child {
+	border-bottom: none;
+}
+
+.day-header {
+	background: #f7fafc;
+	padding: 15px 20px;
+	border-bottom: 1px solid #e2e8f0;
+	font-weight: 600;
+	color: #2d3748;
+	cursor: pointer;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.day-header:hover {
+	background: #edf2f7;
+}
+
+.day-content {
+	padding: 0;
+}
+
+.timeline-item {
+	padding: 15px 20px;
+	border-bottom: 1px solid #f1f5f9;
+	display: flex;
+	align-items: center;
+	gap: 15px;
+	position: relative;
+}
+
+.timeline-item:last-child {
+	border-bottom: none;
+}
+
+/* 修復後的時間區域 - 比例1 */
+.time-section {
+	flex: 1;
+	min-width: 100px;
+	max-width: 120px;
+}
+
+.time-badge {
+	background: #e2e8f0;
+	color: #4a5568;
+	padding: 6px 12px;
+	border-radius: 20px;
+	font-size: 0.875em;
+	font-weight: 500;
+	text-align: center;
+	width: 100%;
+}
+
+/* 編輯模式的時間輸入框 */
+.time-input {
+	background: #e2e8f0;
+	color: #4a5568;
+	padding: 6px 8px;
+	border-radius: 20px;
+	font-size: 0.875em;
+	font-weight: 500;
+	text-align: center;
+	width: 100%;
+	border: 1px solid transparent;
+	font-family: inherit;
+}
+
+.time-input:focus {
+	outline: none;
+	border-color: #4299e1;
+	background: #fff;
+	box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.1);
+}
+
+/* 地點區域 - 比例1 */
+.location-section {
+	flex: 1;
+	min-width: 120px;
+}
+
+.location-name {
+	font-weight: 600;
+	color: #2d3748;
+	margin-bottom: 2px;
+}
+
+/* 活動內容區域 - 比例5 */
+.activity-section {
+	flex: 5;
+}
+
+.location-activity {
+	color: #718096;
+	font-size: 0.9em;
+}
+
+.location-type {
+	width: 8px;
+	height: 40px;
+	border-radius: 4px;
+	flex-shrink: 0;
+}
+
+.type-airport { background: #805ad5; }
+.type-transport { background: #38b2ac; }
+.type-city { background: #4299e1; }
+.type-attraction { background: #48bb78; }
+.type-accommodation { background: #ed8936; }
+.type-event { background: #e53e3e; }
+
+.item-controls {
+	opacity: 0;
+	transition: opacity 0.2s;
+	display: flex;
+	gap: 5px;
+	flex-shrink: 0;
+}
+
+.timeline-item:hover .item-controls {
+	opacity: 1;
+}
+
+.edit-mode .item-controls {
+	opacity: 1;
+}
+
+/* 統一的可編輯樣式 */
+.editable {
+	background: transparent;
+	border: 1px solid transparent;
+	font-family: inherit;
+	font-size: inherit;
+	color: inherit;
+	width: 100%;
+	padding: 4px 6px;
+	border-radius: 4px;
+	transition: all 0.2s;
+}
+
+.editable:focus {
+	outline: none;
+	background: #fff;
+	border-color: #4299e1;
+	box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.1);
+}
+
+/* 標題區域的特殊處理 */
+.header .editable {
+	width: auto;
+	display: inline-block;
+	text-align: center;
+	min-width: 200px;
+	padding: 2px 8px;
+}
+
+.add-item-btn {
+	width: 100%;
+	background: #f7fafc;
+	border: 2px dashed #cbd5e0;
+	color: #718096;
+	padding: 15px;
+	cursor: pointer;
+	border-radius: 6px;
+	margin: 10px 0;
+	font-size: 14px;
+	transition: all 0.2s;
+}
+
+.add-item-btn:hover {
+	background: #edf2f7;
+	border-color: #a0aec0;
+}
+
+.type-select {
+	padding: 4px 8px;
+	border: 1px solid #cbd5e0;
+	border-radius: 4px;
+	font-size: 12px;
+	background: white;
+	margin-left: 10px;
+}
+
+@media (max-width: 768px) {
+	.container {
+		padding: 10px;
+	}
+	
+	.timeline-item {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 10px;
+	}
+	
+	.time-section,
+	.location-section,
+	.activity-section {
+		flex: 1;
+		width: 100%;
+		max-width: none;
+	}
+	
+	/* 手機版三角形位置調整 */
+	.day-header::before {
+		position: absolute;             /* 改為絕對定位 */
+		right: 20px;                   /* 放到右側 */
+		top: 50%;                      /* 垂直置中 */
+		transform: translateY(-50%) rotate(90deg);  /* 置中+旋轉 */
+		margin-right: 0;               /* 移除右邊距 */
+	}
+
+	.day-header.collapsed::before {
+		transform: translateY(-50%) rotate(0deg);   /* 收合時也要保持置中 */
+	}
+	
+	.day-header {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 5px;
+	}
+	
+	.edit-controls {
+		position: static;
+		justify-content: center;
+		margin-top: 20px;
+	}
+}
