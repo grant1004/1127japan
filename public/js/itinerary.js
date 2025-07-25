@@ -686,10 +686,10 @@ function reorderItems(draggedData, targetData, insertBefore) {
 	renderItinerary();
 	
 	// 自動儲存
-	setTimeout(() => {
-		console.log('自動儲存...');
-		saveItinerary();
-	}, 300);
+    // setTimeout(() => {
+	// 	console.log('自動儲存...');
+	// 	saveItinerary();
+	// }, 300);
 }
 
 // 新增項目
