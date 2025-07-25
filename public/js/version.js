@@ -96,6 +96,32 @@ window.versionManager = new VersionManager();
 window.showChangelog = () => window.versionManager.showChangelog();
 window.hideChangelog = () => window.versionManager.hideChangelog();
 
+// 使用說明模態框控制函數
+window.toggleHelp = () => {
+    const modal = document.getElementById('helpModal');
+    if (modal) {
+        if (modal.classList.contains('show')) {
+            hideHelp();
+        } else {
+            showHelp();
+        }
+    }
+};
+
+window.showHelp = () => {
+    const modal = document.getElementById('helpModal');
+    if (modal) {
+        modal.classList.add('show');
+    }
+};
+
+window.hideHelp = () => {
+    const modal = document.getElementById('helpModal');
+    if (modal) {
+        modal.classList.remove('show');
+    }
+};
+
 // 頁面載入時初始化版本資訊
 document.addEventListener('DOMContentLoaded', function() {
     window.versionManager.loadVersionInfo();
@@ -106,11 +132,15 @@ document.addEventListener('click', function(e) {
     if (e.target.classList.contains('changelog-modal')) {
         window.versionManager.hideChangelog();
     }
+    if (e.target.classList.contains('help-modal')) {
+        window.hideHelp();
+    }
 });
 
 // ESC 鍵關閉模態框
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         window.versionManager.hideChangelog();
+        window.hideHelp();
     }
 });

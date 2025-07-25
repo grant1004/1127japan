@@ -12,13 +12,7 @@ body {
 }
 
 .container {
-	max-width: 900px;
-	margin: 0 auto;
-	padding: 20px;
-}
-.notes-container
-{
-	max-width: 300px;
+	max-width: 1000px;
 	margin: 0 auto;
 	padding: 20px;
 }
@@ -43,19 +37,7 @@ body {
 	position: relative;
 }
 
-/* 主要布局思路*/
-.main-layout {
-    display: flex;
-    gap: 20px;
-}
-
-.left-column {
-    flex: 2;
-}
-
-.right-column {
-    flex: 1;
-}
+/* 移除雙欄布局，改為置中單欄布局 */
 
 .header h1 {
 	font-size: 2em;
@@ -700,11 +682,6 @@ body {
 }
 
 @media (max-width: 768px) {
-	
-    .main-layout {
-        flex-direction: column;
-    }
-	
 	.container {
 		padding: 10px;
 	}
@@ -782,6 +759,127 @@ body {
 		position: static;
 		justify-content: center;
 		margin-top: 20px;
+	}
+}
+
+/* 使用說明按鈕樣式 */
+.btn-info {
+	background: #38b2ac;
+	color: white;
+	border: 1px solid #38b2ac;
+}
+
+.btn-info:hover {
+	background: #319795;
+	border-color: #319795;
+}
+
+/* 使用說明模態框樣式 */
+.help-modal {
+	display: none;
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: rgba(0, 0, 0, 0.7);
+	z-index: 2000;
+	justify-content: center;
+	align-items: center;
+}
+
+.help-modal.show {
+	display: flex;
+}
+
+.help-content {
+	background: white;
+	border-radius: 8px;
+	padding: 30px;
+	max-width: 700px;
+	width: 90vw;
+	max-height: 80vh;
+	overflow-y: auto;
+	position: relative;
+}
+
+.help-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 20px;
+	padding-bottom: 10px;
+	border-bottom: 1px solid #e2e8f0;
+}
+
+.help-header h2 {
+	margin: 0;
+	color: #2d3748;
+	font-size: 1.5em;
+}
+
+.help-close {
+	background: none;
+	border: none;
+	font-size: 24px;
+	cursor: pointer;
+	color: #718096;
+	padding: 0;
+	width: 30px;
+	height: 30px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.help-close:hover {
+	color: #2d3748;
+}
+
+.help-body h3 {
+	color: #4a5568;
+	margin: 20px 0 10px 0;
+	font-size: 1.2em;
+	font-weight: 600;
+}
+
+.help-body ul {
+	margin-left: 25px;
+	margin-bottom: 20px;
+	color: #2d3748;
+}
+
+.help-body li {
+	margin-bottom: 8px;
+	line-height: 1.5;
+}
+
+/* 響應式設計 - 手機版使用說明 */
+@media (max-width: 768px) {
+	.help-content {
+		max-width: 95vw;
+		width: 95vw;
+		padding: 20px;
+		margin: 10px;
+		max-height: 85vh;
+	}
+	
+	.help-header h2 {
+		font-size: 1.2em;
+	}
+	
+	.help-body h3 {
+		font-size: 1em;
+	}
+	
+	.help-body {
+		font-size: 14px;
+	}
+	
+	.help-close {
+		width: 35px;
+		height: 35px;
+		font-size: 28px;
 	}
 }
 
