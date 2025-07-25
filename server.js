@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs').promises;
 const { Pool } = require('pg');
+const packageJson = require('./package.json');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -105,6 +106,11 @@ async function initializeDatabase() {
 // 中介軟體
 app.use(express.static('public'));
 app.use(express.json());
+
+// 讓 CHANGELOG.md 可以被前端存取
+app.get('/CHANGELOG.md', (req, res) => {
+    res.sendFile(path.join(__dirname, 'CHANGELOG.md'));
+});
 
 // 行程資料文件路徑
 const DATA_FILE = path.join(__dirname, 'data', 'itinerary.json');
@@ -684,6 +690,15 @@ app.delete('/api/itinerary/notes/:itemId/:noteId', async (req, res) => {
     }
 });
 
+
+// 版本資訊 API
+app.get('/api/version', (req, res) => {
+    res.json({
+        version: packageJson.version,
+        name: packageJson.name,
+        description: packageJson.description
+    });
+});
 
 // 主頁路由
 app.get('/', (req, res) => {

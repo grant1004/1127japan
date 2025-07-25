@@ -1,6 +1,6 @@
 {
   "name": "japan-itinerary",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Japan Kansai Shikoku Travel Itinerary with Online Editing",
   "main": "server.js",
   "scripts": {

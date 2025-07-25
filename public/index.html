@@ -85,9 +85,28 @@
 		</div>
 	</div>
 
+	<!-- 版本資訊 -->
+	<div class="version-info" id="versionInfo" onclick="showChangelog()">
+		<span>載入中...</span>
+	</div>
+
+	<!-- 更新日誌模態框 -->
+	<div class="changelog-modal" id="changelogModal">
+		<div class="changelog-content">
+			<div class="changelog-header">
+				<h2>更新日誌</h2>
+				<button class="changelog-close" onclick="hideChangelog()">×</button>
+			</div>
+			<div class="changelog-body" id="changelogBody">
+				載入中...
+			</div>
+		</div>
+	</div>
+
 	<!-- 載入 JavaScript 檔案 -->
 	<script src="js/itinerary.js"></script>
 	<script src="js/notification.js"></script>
+	<script src="js/version.js"></script>
 	
 	<!-- 初始化腳本 -->
 	<script>
