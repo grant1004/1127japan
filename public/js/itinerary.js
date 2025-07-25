@@ -1,9 +1,9 @@
-let currentItinerary = null;
+window.currentItinerary = null;
 let isEditMode = false;
 let originalItinerary = null;
 
-// 備註資料結構
-let itemNotes = {
+// 備註資料結構 - 設定為全域變數以供通知系統使用
+window.itemNotes = {
 	"item1": [
 		{
 			id: "note1",
@@ -109,28 +109,28 @@ async function loadItinerary() {
 				const data = await response.json();
 				
 				// 🔥 修正：根據實際資料庫結構載入
-				currentItinerary = {
+				window.currentItinerary = {
 					title: data.title,
 					subtitle: data.subtitle,
 					days: data.days
 				};
 				
 				// 🔥 修正：備註資料直接從 API 回應中獲取
-				itemNotes = data.notes || {};
+				window.itemNotes = data.notes || {};
 				
 				console.log('✅ 從 API 載入資料:', { 
 					title: data.title, 
 					daysCount: data.days?.length, 
-					notesCount: Object.keys(itemNotes).length 
+					notesCount: Object.keys(window.itemNotes).length 
 				});
 			} else {
 				throw new Error('API not available');
 			}
 		} catch (apiError) {
 			console.log('API載入失敗，使用預設資料:', apiError.message);
-			currentItinerary = defaultItinerary;
+			window.currentItinerary = defaultItinerary;
 			// 使用預設備註資料
-			itemNotes = {
+			window.itemNotes = {
 				"item1": [
 					{
 						id: "note1",
@@ -161,7 +161,7 @@ async function loadItinerary() {
 		
 		renderItinerary();
 		setStatus('saved', '已載入');
-		console.log('📝 載入的備註資料:', itemNotes);
+		console.log('📝 載入的備註資料:', window.itemNotes);
 	} catch (error) {
 		console.error('載入行程失敗:', error);
 		setStatus('error', '載入失敗');
@@ -178,8 +178,8 @@ async function saveItinerary() {
         
         // 包含備註資料
         const dataToSave = {
-            ...currentItinerary,
-            notes: itemNotes
+            ...window.currentItinerary,
+            notes: window.itemNotes
         };
         
         // 真正儲存到伺服器
@@ -207,8 +207,8 @@ async function saveItinerary() {
         // 可選：如果伺服器儲存失敗，暫時存到本地
         try {
             localStorage.setItem('itinerary_backup', JSON.stringify({
-                ...currentItinerary,
-                notes: itemNotes
+                ...window.currentItinerary,
+                notes: window.itemNotes
             }));
             console.log('已備份到本地儲存');
         } catch (localError) {
@@ -242,7 +242,7 @@ function toggleEditMode() {
 // 進入編輯模式
 function enterEditMode() {
 	isEditMode = true;
-	originalItinerary = JSON.parse(JSON.stringify(currentItinerary));
+	originalItinerary = JSON.parse(JSON.stringify(window.currentItinerary));
 	
 	document.body.classList.add('edit-mode');
 	document.getElementById('editBtn').style.display = 'none';
@@ -266,7 +266,7 @@ function exitEditMode() {
 
 // 取消編輯
 function cancelEdit() {
-	currentItinerary = originalItinerary;
+	window.currentItinerary = originalItinerary;
 	exitEditMode();
 }
 
@@ -285,11 +285,11 @@ function makeEditable() {
 // 收集編輯的資料
 function collectEditedData() {
 	// 更新標題
-	currentItinerary.title = document.getElementById('title').textContent;
-	currentItinerary.subtitle = document.getElementById('subtitle').textContent;
+	window.currentItinerary.title = document.getElementById('title').textContent;
+	window.currentItinerary.subtitle = document.getElementById('subtitle').textContent;
 	
 	// 更新各個項目的資料
-	currentItinerary.days.forEach(day => {
+	window.currentItinerary.days.forEach(day => {
 		day.items.forEach(item => {
 			const itemElement = document.querySelector(`[data-item-id="${item.id}"]`);
 			if (itemElement) {
@@ -307,18 +307,18 @@ function collectEditedData() {
 	});
 }
 
-// 渲染行程
-function renderItinerary() {
-	if (!currentItinerary) return;
+// 渲染行程 - 設定為全域函數以供通知系統使用
+window.renderItinerary = function renderItinerary() {
+	if (!window.currentItinerary) return;
 	
 	const timeline = document.getElementById('timeline');
 	const title = document.getElementById('title');
 	const subtitle = document.getElementById('subtitle');
 	
-	title.textContent = currentItinerary.title;
-	subtitle.textContent = currentItinerary.subtitle;
+	title.textContent = window.currentItinerary.title;
+	subtitle.textContent = window.currentItinerary.subtitle;
 	
-	timeline.innerHTML = currentItinerary.days.map(day => `
+	timeline.innerHTML = window.currentItinerary.days.map(day => `
 		<div class="day-group">
 			<div class="day-header" onclick="toggleDay('${day.id}')">
 				<span>${day.date} - ${day.title}</span>
@@ -454,7 +454,7 @@ function renderNotesPanel(itemId) {
 
 // 獲取備註數量
 function getNoteCount(itemId) {
-	return (itemNotes[itemId] || []).length;
+	return (window.itemNotes[itemId] || []).length;
 }
 
 // 切換備註面板顯示
@@ -484,7 +484,7 @@ function toggleNotes(itemId) {
 // 渲染備註表格
 function renderNotesTable(itemId) {
 	const tbody = document.getElementById(`notes-tbody-${itemId}`);
-	const notes = itemNotes[itemId] || [];
+	const notes = window.itemNotes[itemId] || [];
 	
 	if (notes.length === 0) {
 		tbody.innerHTML = `
@@ -556,11 +556,11 @@ async function saveNote(itemId) {
 		type: content.match(/^https?:\/\//) ? 'link' : 'text'
 	};
 	
-	if (!itemNotes[itemId]) {
-		itemNotes[itemId] = [];
+	if (!window.itemNotes[itemId]) {
+		window.itemNotes[itemId] = [];
 	}
 	
-	itemNotes[itemId].push(newNote);
+	window.itemNotes[itemId].push(newNote);
 	renderNotesTable(itemId);
 	updateNotesCount(itemId);
 	cancelAddNote(itemId);
@@ -580,7 +580,7 @@ async function saveNote(itemId) {
 
 // 編輯備註
 async function editNote(itemId, noteId) {
-	const note = itemNotes[itemId]?.find(n => n.id === noteId);
+	const note = window.itemNotes[itemId]?.find(n => n.id === noteId);
 	if (!note) return;
 	
 	const newDescription = prompt('編輯描述：', note.description);
@@ -616,8 +616,8 @@ async function editNote(itemId, noteId) {
 async function deleteNote(itemId, noteId) {
 	if (!confirm('確定要刪除這個備註嗎？')) return;
 	
-	if (itemNotes[itemId]) {
-		itemNotes[itemId] = itemNotes[itemId].filter(note => note.id !== noteId);
+	if (window.itemNotes[itemId]) {
+		window.itemNotes[itemId] = window.itemNotes[itemId].filter(note => note.id !== noteId);
 		renderNotesTable(itemId);
 		updateNotesCount(itemId);
 		
@@ -733,8 +733,8 @@ function cleanupDragVisuals() {
 function reorderItems(draggedData, targetData, insertBefore) {
 	console.log('執行重新排序:', { draggedData, targetData, insertBefore });
 	
-	const sourceDay = currentItinerary.days.find(d => d.id === draggedData.dayId);
-	const targetDay = currentItinerary.days.find(d => d.id === targetData.dayId);
+	const sourceDay = window.currentItinerary.days.find(d => d.id === draggedData.dayId);
+	const targetDay = window.currentItinerary.days.find(d => d.id === targetData.dayId);
 	
 	if (!sourceDay || !targetDay) {
 		console.error('找不到日期:', { sourceDay, targetDay });
@@ -782,7 +782,7 @@ function addNewItem(dayId) {
 		activity: '請編輯活動內容'
 	};
 	
-	const day = currentItinerary.days.find(d => d.id === dayId);
+	const day = window.currentItinerary.days.find(d => d.id === dayId);
 	if (day) {
 		day.items.push(newItem);
 		renderItinerary();
@@ -793,12 +793,12 @@ function addNewItem(dayId) {
 function deleteItem(itemId) {
 	if (confirm('確定要刪除這個項目嗎？相關備註也會被刪除。')) {
 		// 刪除項目
-		currentItinerary.days.forEach(day => {
+		window.currentItinerary.days.forEach(day => {
 			day.items = day.items.filter(item => item.id !== itemId);
 		});
 		
 		// 刪除相關備註
-		delete itemNotes[itemId];
+		delete window.itemNotes[itemId];
 		
 		renderItinerary();
 	}

@@ -90,11 +90,19 @@ class DatabaseNotificationClient {
             // 只有當資料真的不同時才更新
             if (JSON.stringify(newData) !== JSON.stringify(window.currentItinerary)) {
                 window.currentItinerary = newData;
-                if (window.itinerary && window.itinerary.renderItinerary) {
+                
+                // 🔥 修復：同步更新備註資料
+                if (newData.notes) {
+                    window.itemNotes = newData.notes;
+                }
+                
+                // 調用渲染函數更新 UI
+                if (typeof renderItinerary === 'function') {
+                    renderItinerary();
+                } else if (window.renderItinerary) {
                     window.renderItinerary();
                 } else {
-                    // 如果 renderItinerary 函數不在全域，嘗試直接調用
-                    renderItinerary();
+                    console.error('找不到 renderItinerary 函數');
                 }
             }
         } catch (error) {
