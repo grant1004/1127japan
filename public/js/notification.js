@@ -89,6 +89,20 @@ class DatabaseNotificationClient {
             
             // 只有當資料真的不同時才更新
             if (JSON.stringify(newData) !== JSON.stringify(window.currentItinerary)) {
+                // 🔥 新增：記住當前開啟的備註面板和表單狀態
+                const openNotePanels = [];
+                const openNoteForms = [];
+                document.querySelectorAll('.notes-panel.show').forEach(panel => {
+                    const itemId = panel.id.replace('notes-', '');
+                    openNotePanels.push(itemId);
+                    
+                    // 檢查是否有開啟的新增表單
+                    const form = document.getElementById(`note-form-${itemId}`);
+                    if (form && form.style.display !== 'none') {
+                        openNoteForms.push(itemId);
+                    }
+                });
+                
                 window.currentItinerary = newData;
                 
                 // 🔥 修復：同步更新備註資料
@@ -104,6 +118,31 @@ class DatabaseNotificationClient {
                 } else {
                     console.error('找不到 renderItinerary 函數');
                 }
+                
+                // 🔥 新增：重新打開之前開啟的備註面板和表單
+                setTimeout(() => {
+                    openNotePanels.forEach(itemId => {
+                        const panel = document.getElementById(`notes-${itemId}`);
+                        const btn = document.querySelector(`[onclick="toggleNotes('${itemId}')"]`);
+                        if (panel && btn) {
+                            panel.classList.add('show');
+                            btn.classList.add('active');
+                            
+                            // 重新載入備註表格內容
+                            if (window.renderNotesTable) {
+                                window.renderNotesTable(itemId);
+                            }
+                        }
+                    });
+                    
+                    // 重新打開新增表單
+                    openNoteForms.forEach(itemId => {
+                        const form = document.getElementById(`note-form-${itemId}`);
+                        if (form && window.showAddNoteForm) {
+                            window.showAddNoteForm(itemId);
+                        }
+                    });
+                }, 100); // 小延遲確保 DOM 更新完成
             }
         } catch (error) {
             console.error('重新載入行程失敗:', error);

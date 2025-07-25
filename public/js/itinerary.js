@@ -520,8 +520,8 @@ function toggleNotes(itemId) {
 	}
 }
 
-// 渲染備註表格
-function renderNotesTable(itemId) {
+// 渲染備註表格 - 設為全域函數供通知系統使用
+window.renderNotesTable = function renderNotesTable(itemId) {
 	const tbody = document.getElementById(`notes-tbody-${itemId}`);
 	const notes = window.itemNotes[itemId] || [];
 	
@@ -556,8 +556,8 @@ function renderNotesTable(itemId) {
 	`).join('');
 }
 
-// 顯示新增備註表單
-function showAddNoteForm(itemId) {
+// 顯示新增備註表單 - 設為全域函數供通知系統使用
+window.showAddNoteForm = function showAddNoteForm(itemId) {
 	const form = document.getElementById(`note-form-${itemId}`);
 	form.style.display = 'block';
 	
