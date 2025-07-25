@@ -117,29 +117,8 @@ async function ensureDataDir() {
         await fs.mkdir(path.join(__dirname, 'data'));
     }
 }
-// 從資料庫讀取行程資料
-async function loadItineraryFromDb() {
-    try {
-        const query = 'SELECT * FROM itinerary ORDER BY updated_at DESC LIMIT 1';
-        const result = await pool.query(query);
-        
-        if (result.rows.length === 0) {
-            return getDefaultItinerary();
-        }
-        
-        const row = result.rows[0];
-        return {
-            title: row.title,
-            subtitle: row.subtitle,
-            days: row.data.days
-        };
-    } catch (error) {
-        console.error('從資料庫讀取失敗:', error);
-        return getDefaultItinerary();
-    }
-}
 
-// 儲存行程資料到資料庫
+// 修改 saveItineraryToDb 函數
 async function saveItineraryToDb(itineraryData) {
     try {
         const query = `
@@ -150,10 +129,13 @@ async function saveItineraryToDb(itineraryData) {
         const values = [
             itineraryData.title,
             itineraryData.subtitle,
-            { days: itineraryData.days }
+            { 
+                days: itineraryData.days,
+                notes: itineraryData.notes || {}  // 🔥 新增備註支援
+            }
         ];
         
-		await pool.query(query, values);  // ✅ 添加 values 參數
+        await pool.query(query, values);
         console.log('✅ 資料已儲存到資料庫');
         return true;
     } catch (error) {
@@ -162,14 +144,13 @@ async function saveItineraryToDb(itineraryData) {
     }
 }
 
-// 4. 修改儲存函數，加入通知
+// 修改 updateItineraryInDb 函數
 async function updateItineraryInDb(itineraryData) {
     const client = await pool.connect();
     
     try {
         await client.query('BEGIN');
         
-        // 更新資料
         const updateQuery = `
             UPDATE itinerary 
             SET title = $1, subtitle = $2, data = $3, updated_at = CURRENT_TIMESTAMP
@@ -179,19 +160,21 @@ async function updateItineraryInDb(itineraryData) {
         const values = [
             itineraryData.title,
             itineraryData.subtitle,
-            { days: itineraryData.days }
+            { 
+                days: itineraryData.days,
+                notes: itineraryData.notes || {}  // 🔥 新增備註支援
+            }
         ];
         
         await client.query(updateQuery, values);
         
-        // 🔔 發送通知！
+        // 通知部分保持不變...
         const notifyPayload = JSON.stringify({
             action: 'update',
             title: itineraryData.title,
             updatedAt: new Date().toISOString()
         });
         
-        // 使用字符串連接而非參數化查詢
         const notifyQuery = `NOTIFY itinerary_changes, '${notifyPayload.replace(/'/g, "''")}'`;
         await client.query(notifyQuery);
 		
@@ -206,11 +189,46 @@ async function updateItineraryInDb(itineraryData) {
     }
 }
 
+// 修改 loadItineraryFromDb 函數
+async function loadItineraryFromDb() {
+    try {
+        const query = 'SELECT * FROM itinerary ORDER BY updated_at DESC LIMIT 1';
+        const result = await pool.query(query);
+        
+        if (result.rows.length === 0) {
+            return getDefaultItinerary();
+        }
+        
+        const row = result.rows[0];
+        return {
+            title: row.title,
+            subtitle: row.subtitle,
+            days: row.data.days,
+            notes: row.data.notes || {}  // 🔥 新增備註讀取
+        };
+    } catch (error) {
+        console.error('從資料庫讀取失敗:', error);
+        return getDefaultItinerary();
+    }
+}
+
 // 預設行程資料
+
 function getDefaultItinerary() {
     return {
         title: "日本關西四國行程",
         subtitle: "2025年11月22日 - 11月29日 (8天7夜)",
+        notes: {  // 🔥 新增預設備註
+            "item1": [
+                {
+                    id: "note1",
+                    priority: "high",
+                    description: "交通提醒",
+                    content: "https://www.kansai-airport.or.jp/",
+                    type: "link"
+                }
+            ]
+        },
         days: [
             {
                 id: "day1",
@@ -466,6 +484,7 @@ function getDefaultItinerary() {
                 ]
             }
         ]
+   
     };
 }
 
@@ -494,7 +513,32 @@ app.post('/api/itinerary', async (req, res) => {
     }
 });
 
-// 其他 API 路由也需要修改...
+
+// 新增行程項目
+app.post('/api/itinerary/item/:dayId', async (req, res) => {
+    try {
+        const { dayId } = req.params;
+        const newItem = req.body;
+        
+        const itinerary = await loadItinerary();
+        const day = itinerary.days.find(d => d.id === dayId);
+        
+        if (!day) {
+            return res.status(404).json({ error: '找不到指定的日期' });
+        }
+        
+        // 產生新的 ID
+        newItem.id = `item${Date.now()}`;
+        day.items.push(newItem);
+        
+        await saveItinerary(itinerary);
+        res.json({ success: true, item: newItem });
+    } catch (error) {
+        console.error('新增項目失敗:', error);
+        res.status(500).json({ error: '新增項目失敗' });
+    }
+});
+
 app.put('/api/itinerary/item/:dayId/:itemId', async (req, res) => {
     try {
         const { dayId, itemId } = req.params;
@@ -519,31 +563,6 @@ app.put('/api/itinerary/item/:dayId/:itemId', async (req, res) => {
     } catch (error) {
         console.error('更新項目失敗:', error);
         res.status(500).json({ error: '更新項目失敗' });
-    }
-});
-
-// 新增行程項目
-app.post('/api/itinerary/item/:dayId', async (req, res) => {
-    try {
-        const { dayId } = req.params;
-        const newItem = req.body;
-        
-        const itinerary = await loadItinerary();
-        const day = itinerary.days.find(d => d.id === dayId);
-        
-        if (!day) {
-            return res.status(404).json({ error: '找不到指定的日期' });
-        }
-        
-        // 產生新的 ID
-        newItem.id = `item${Date.now()}`;
-        day.items.push(newItem);
-        
-        await saveItinerary(itinerary);
-        res.json({ success: true, item: newItem });
-    } catch (error) {
-        console.error('新增項目失敗:', error);
-        res.status(500).json({ error: '新增項目失敗' });
     }
 });
 
@@ -573,6 +592,97 @@ app.delete('/api/itinerary/item/:dayId/:itemId', async (req, res) => {
         res.status(500).json({ error: '刪除項目失敗' });
     }
 });
+
+
+// 獲取特定項目的備註
+app.get('/api/itinerary/notes/:itemId', async (req, res) => {
+    try {
+        const { itemId } = req.params;
+        const itinerary = await loadItineraryFromDb();
+        const notes = itinerary.notes?.[itemId] || [];
+        res.json(notes);
+    } catch (error) {
+        console.error('讀取備註失敗:', error);
+        res.status(500).json({ error: '讀取備註失敗' });
+    }
+});
+
+// 新增備註
+app.post('/api/itinerary/notes/:itemId', async (req, res) => {
+    try {
+        const { itemId } = req.params;
+        const newNote = req.body;
+        
+        const itinerary = await loadItineraryFromDb();
+        if (!itinerary.notes) itinerary.notes = {};
+        if (!itinerary.notes[itemId]) itinerary.notes[itemId] = [];
+        
+        newNote.id = `note_${Date.now()}`;
+        itinerary.notes[itemId].push(newNote);
+        
+        await updateItineraryInDb(itinerary);
+        res.json({ success: true, note: newNote });
+    } catch (error) {
+        console.error('新增備註失敗:', error);
+        res.status(500).json({ error: '新增備註失敗' });
+    }
+});
+
+// 更新備註
+app.put('/api/itinerary/notes/:itemId/:noteId', async (req, res) => {
+    try {
+        const { itemId, noteId } = req.params;
+        const updatedNote = req.body;
+        
+        const itinerary = await loadItineraryFromDb();
+        const notes = itinerary.notes?.[itemId];
+        
+        if (!notes) {
+            return res.status(404).json({ error: '找不到備註' });
+        }
+        
+        const noteIndex = notes.findIndex(note => note.id === noteId);
+        if (noteIndex === -1) {
+            return res.status(404).json({ error: '找不到指定的備註' });
+        }
+        
+        notes[noteIndex] = { ...notes[noteIndex], ...updatedNote };
+        
+        await updateItineraryInDb(itinerary);
+        res.json({ success: true, note: notes[noteIndex] });
+    } catch (error) {
+        console.error('更新備註失敗:', error);
+        res.status(500).json({ error: '更新備註失敗' });
+    }
+});
+
+// 刪除備註
+app.delete('/api/itinerary/notes/:itemId/:noteId', async (req, res) => {
+    try {
+        const { itemId, noteId } = req.params;
+        
+        const itinerary = await loadItineraryFromDb();
+        const notes = itinerary.notes?.[itemId];
+        
+        if (!notes) {
+            return res.status(404).json({ error: '找不到備註' });
+        }
+        
+        const noteIndex = notes.findIndex(note => note.id === noteId);
+        if (noteIndex === -1) {
+            return res.status(404).json({ error: '找不到指定的備註' });
+        }
+        
+        notes.splice(noteIndex, 1);
+        
+        await updateItineraryInDb(itinerary);
+        res.json({ success: true, message: '備註已刪除' });
+    } catch (error) {
+        console.error('刪除備註失敗:', error);
+        res.status(500).json({ error: '刪除備註失敗' });
+    }
+});
+
 
 // 主頁路由
 app.get('/', (req, res) => {
@@ -619,6 +729,67 @@ app.get('/api/events', (req, res) => {
         res.end();
     });
 });
+
+
+// 重新排序項目
+app.put('/api/itinerary/reorder', async (req, res) => {
+    try {
+        const { dayId, items } = req.body; // items 是重新排序後的完整陣列
+        
+        const itinerary = await loadItineraryFromDb();
+        const day = itinerary.days.find(d => d.id === dayId);
+        
+        if (!day) {
+            return res.status(404).json({ error: '找不到指定的日期' });
+        }
+        
+        // 更新項目順序
+        day.items = items;
+        
+        await updateItineraryInDb(itinerary);
+        res.json({ success: true, message: '項目順序已更新' });
+    } catch (error) {
+        console.error('重新排序失敗:', error);
+        res.status(500).json({ error: '重新排序失敗' });
+    }
+});
+
+// 跨日期移動項目
+app.put('/api/itinerary/move-item', async (req, res) => {
+    try {
+        const { 
+            itemId, 
+            fromDayId, 
+            toDayId, 
+            targetIndex 
+        } = req.body;
+        
+        const itinerary = await loadItineraryFromDb();
+        const fromDay = itinerary.days.find(d => d.id === fromDayId);
+        const toDay = itinerary.days.find(d => d.id === toDayId);
+        
+        if (!fromDay || !toDay) {
+            return res.status(404).json({ error: '找不到指定的日期' });
+        }
+        
+        // 找到要移動的項目
+        const itemIndex = fromDay.items.findIndex(item => item.id === itemId);
+        if (itemIndex === -1) {
+            return res.status(404).json({ error: '找不到指定的項目' });
+        }
+        
+        // 移動項目
+        const [movedItem] = fromDay.items.splice(itemIndex, 1);
+        toDay.items.splice(targetIndex, 0, movedItem);
+        
+        await updateItineraryInDb(itinerary);
+        res.json({ success: true, message: '項目已移動' });
+    } catch (error) {
+        console.error('移動項目失敗:', error);
+        res.status(500).json({ error: '移動項目失敗' });
+    }
+});
+
 
 // 啟動伺服器
 app.listen(PORT, async () => {
