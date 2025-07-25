@@ -826,7 +826,8 @@ body {
 	background: white;
 	border-radius: 8px;
 	padding: 30px;
-	max-width: 600px;
+	max-width: 900px;
+	width: 90vw;
 	max-height: 80vh;
 	overflow-y: auto;
 	position: relative;
@@ -861,22 +862,59 @@ body {
 
 .changelog-body h2 {
 	color: #2d3748;
-	margin-bottom: 10px;
-	font-size: 1.4em;
+	margin-bottom: 15px;
+	font-size: 1.5em;
+	border-bottom: 2px solid #e2e8f0;
+	padding-bottom: 8px;
 }
 
 .changelog-body h3 {
 	color: #4a5568;
-	margin: 15px 0 8px 0;
-	font-size: 1.1em;
+	margin: 20px 0 10px 0;
+	font-size: 1.2em;
+	font-weight: 600;
 }
 
 .changelog-body ul {
-	margin-left: 20px;
-	margin-bottom: 15px;
+	margin-left: 25px;
+	margin-bottom: 20px;
 }
 
 .changelog-body li {
-	margin-bottom: 5px;
+	margin-bottom: 8px;
 	color: #2d3748;
+	line-height: 1.5;
+}
+
+/* 響應式設計 - 手機版更新日誌 */
+@media (max-width: 768px) {
+	.changelog-content {
+		max-width: 95vw;
+		width: 95vw;
+		padding: 20px;
+		margin: 10px;
+		max-height: 85vh;
+	}
+	
+	.changelog-header h2 {
+		font-size: 1.2em;
+	}
+	
+	.changelog-body h2 {
+		font-size: 1.1em;
+	}
+	
+	.changelog-body h3 {
+		font-size: 1em;
+	}
+	
+	.changelog-body {
+		font-size: 14px;
+	}
+	
+	.changelog-close {
+		width: 35px;
+		height: 35px;
+		font-size: 28px;
+	}
 }
