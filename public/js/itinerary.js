@@ -1,5 +1,5 @@
 window.currentItinerary = null;
-let isEditMode = false;
+window.isEditMode = false;
 let originalItinerary = null;
 
 // 備註資料結構 - 設定為全域變數以供通知系統使用
@@ -199,7 +199,7 @@ async function saveItinerary() {
         console.log('儲存成功:', result);
         
         setStatus('saved', '已儲存');
-        if (isEditMode) {
+        if (window.isEditMode) {
             exitEditMode();
         }
     } catch (error) {
@@ -271,7 +271,7 @@ function setStatus(type, message) {
 
 // 切換編輯模式
 function toggleEditMode() {
-	if (!isEditMode) {
+	if (!window.isEditMode) {
 		enterEditMode();
 	} else {
 		exitEditMode();
@@ -280,7 +280,7 @@ function toggleEditMode() {
 
 // 進入編輯模式
 function enterEditMode() {
-	isEditMode = true;
+	window.isEditMode = true;
 	originalItinerary = JSON.parse(JSON.stringify(window.currentItinerary));
 	
 	document.body.classList.add('edit-mode');
@@ -293,7 +293,7 @@ function enterEditMode() {
 
 // 退出編輯模式
 function exitEditMode() {
-	isEditMode = false;
+	window.isEditMode = false;
 	
 	document.body.classList.remove('edit-mode');
 	document.getElementById('editBtn').style.display = 'inline-block';
@@ -365,12 +365,12 @@ window.renderItinerary = function renderItinerary() {
 			</div>
 			<div class="day-content" id="content-${day.id}" style="display: block;">
 				${day.items.map(item => renderTimelineItem(item, day.id)).join('')}
-				${isEditMode ? `<button class="add-item-btn" onclick="addNewItem('${day.id}')">+ 新增行程項目</button>` : ''}
+				${window.isEditMode ? `<button class="add-item-btn" onclick="addNewItem('${day.id}')">+ 新增行程項目</button>` : ''}
 			</div>
 		</div>
 	`).join('');
 	
-	if (isEditMode) {
+	if (window.isEditMode) {
 		makeEditable();
 		addEditableListeners();
 	}
@@ -385,7 +385,7 @@ function renderTimelineItem(item, dayId) {
 	const typeClass = `type-${item.type}`;
 	const noteCount = getNoteCount(item.id);
 	
-	if (isEditMode) {
+	if (window.isEditMode) {
 		return `
 			<div class="timeline-item" 
 				 data-item-id="${item.id}" 
@@ -604,14 +604,17 @@ async function saveNote(itemId) {
 	updateNotesCount(itemId);
 	cancelAddNote(itemId);
 	
-	// 🔥 修改：使用專門的備註儲存函數，不會關閉備註面板
-	try {
-		await saveNotesOnly();
-	} catch (error) {
-		console.error('儲存備註失敗:', error);
-		// 可選：顯示錯誤提示
-		alert('儲存備註失敗，請稍後重試');
+	// 🔥 新邏輯：根據編輯模式決定是否立即儲存
+	if (!window.isEditMode) {
+		// 非編輯模式：立即自動儲存
+		try {
+			await saveNotesOnly();
+		} catch (error) {
+			console.error('儲存備註失敗:', error);
+			alert('儲存備註失敗，請稍後重試');
+		}
 	}
+	// 編輯模式：不儲存，等待用戶點擊「儲存」按鈕
 }
 
 // 編輯備註
@@ -636,13 +639,17 @@ async function editNote(itemId, noteId) {
 	
 	renderNotesTable(itemId);
 	
-	// 🔥 修改：使用專門的備註儲存函數，不會關閉備註面板
-	try {
-		await saveNotesOnly();
-	} catch (error) {
-		console.error('更新備註失敗:', error);
-		alert('更新備註失敗，請稍後重試');
+	// 🔥 新邏輯：根據編輯模式決定是否立即儲存
+	if (!window.isEditMode) {
+		// 非編輯模式：立即自動儲存
+		try {
+			await saveNotesOnly();
+		} catch (error) {
+			console.error('更新備註失敗:', error);
+			alert('更新備註失敗，請稍後重試');
+		}
 	}
+	// 編輯模式：不儲存，等待用戶點擊「儲存」按鈕
 }
 
 // 刪除備註
@@ -654,13 +661,17 @@ async function deleteNote(itemId, noteId) {
 		renderNotesTable(itemId);
 		updateNotesCount(itemId);
 		
-		// 🔥 修改：使用專門的備註儲存函數，不會關閉備註面板
-		try {
-			await saveNotesOnly();
-		} catch (error) {
-			console.error('刪除備註失敗:', error);
-			alert('刪除備註失敗，請稍後重試');
+		// 🔥 新邏輯：根據編輯模式決定是否立即儲存
+		if (!window.isEditMode) {
+			// 非編輯模式：立即自動儲存
+			try {
+				await saveNotesOnly();
+			} catch (error) {
+				console.error('刪除備註失敗:', error);
+				alert('刪除備註失敗，請稍後重試');
+			}
 		}
+		// 編輯模式：不儲存，等待用戶點擊「儲存」按鈕
 	}
 }
 
@@ -866,7 +877,7 @@ document.addEventListener('keydown', function(e) {
     if (e.ctrlKey || e.metaKey) {
         if (e.key === 's') {
             e.preventDefault();
-            if (isEditMode) {
+            if (window.isEditMode) {
                 saveItinerary();
             }
         } else if (e.key === 'e') {
