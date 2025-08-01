@@ -35,14 +35,43 @@
 		<p id="subtitle">2025年11月22日 - 11月29日 (8天7夜)</p>
 	</div>
 	
-	<!-- 主要內容區域 - 置中布局 -->
+	<!-- 主要內容區域 - 雙欄布局 -->
 	<div class="container">
-		<div class="timeline-section">
-			<div class="timeline-header">行程時間軸</div>
-			<div class="timeline" id="timeline">
-				<!-- 動態載入內容 -->
-				<div class="loading-placeholder" style="padding: 40px; text-align: center; color: #718096;">
-					載入中...
+		<div class="main-content">
+			<div class="timeline-section">
+				<div class="timeline-header">行程時間軸</div>
+				<div class="timeline" id="timeline">
+					<!-- 動態載入內容 -->
+					<div class="loading-placeholder" style="padding: 40px; text-align: center; color: #718096;">
+						載入中...
+					</div>
+				</div>
+			</div>
+			
+			<div class="temp-notes-section">
+				<div class="temp-notes-header">
+					<span>暫時資訊</span>
+					<button class="btn btn-small btn-primary" id="addTempNoteBtn" onclick="showAddTempNoteForm()">+ 新增</button>
+				</div>
+				<div class="temp-notes-content" id="tempNotesContent">
+					<!-- 暫時性資訊列表 -->
+					<div class="temp-notes-placeholder" style="padding: 20px; text-align: center; color: #718096; font-style: italic;">
+						尚無暫時資訊
+					</div>
+				</div>
+				
+				<!-- 新增暫時資訊表單 -->
+				<div class="temp-note-form" id="tempNoteForm" style="display: none;">
+					<div class="temp-note-form-row">
+						<input type="text" id="tempNoteTitle" placeholder="標題或描述" />
+					</div>
+					<div class="temp-note-form-row">
+						<textarea id="tempNoteContent" placeholder="內容（可以是網址或文字）" rows="3"></textarea>
+					</div>
+					<div class="temp-note-form-actions">
+						<button class="btn btn-small btn-success" onclick="saveTempNote()">儲存</button>
+						<button class="btn btn-small" onclick="cancelAddTempNote()">取消</button>
+					</div>
 				</div>
 			</div>
 		</div>

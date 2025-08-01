@@ -37,7 +37,137 @@ body {
 	position: relative;
 }
 
-/* 移除雙欄布局，改為置中單欄布局 */
+/* 雙欄布局 - 行程時間軸與暫時資訊 */
+.main-content {
+	display: flex;
+	gap: 20px;
+	align-items: flex-start;
+}
+
+.timeline-section {
+	flex: 2;
+	background: white;
+	border-radius: 4px;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+	overflow: hidden;
+}
+
+.temp-notes-section {
+	flex: 1;
+	background: white;
+	border-radius: 4px;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+	overflow: hidden;
+	max-height: calc(100vh - 200px);
+	display: flex;
+	flex-direction: column;
+}
+
+.temp-notes-header {
+	background: #38b2ac;
+	color: white;
+	padding: 20px;
+	font-size: 1.2em;
+	font-weight: 600;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.temp-notes-content {
+	flex: 1;
+	overflow-y: auto;
+	padding: 0;
+}
+
+.temp-notes-placeholder {
+	padding: 20px;
+	text-align: center;
+	color: #718096;
+	font-style: italic;
+}
+
+.temp-note-item {
+	padding: 15px;
+	border-bottom: 1px solid #e2e8f0;
+	transition: background-color 0.2s;
+}
+
+.temp-note-item:hover {
+	background: #f7fafc;
+}
+
+.temp-note-item:last-child {
+	border-bottom: none;
+}
+
+.temp-note-title {
+	font-weight: 600;
+	color: #2d3748;
+	margin-bottom: 8px;
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+}
+
+.temp-note-content {
+	color: #4a5568;
+	font-size: 0.9em;
+	line-height: 1.5;
+	word-wrap: break-word;
+}
+
+.temp-note-link {
+	color: #4299e1;
+	text-decoration: none;
+}
+
+.temp-note-link:hover {
+	text-decoration: underline;
+}
+
+.temp-note-actions {
+	opacity: 0;
+	transition: opacity 0.2s;
+	display: flex;
+	gap: 5px;
+	flex-shrink: 0;
+}
+
+.temp-note-item:hover .temp-note-actions {
+	opacity: 1;
+}
+
+.temp-note-form {
+	padding: 15px;
+	border-top: 1px solid #e2e8f0;
+	background: #f8fafc;
+}
+
+.temp-note-form-row {
+	margin-bottom: 10px;
+}
+
+.temp-note-form-row input,
+.temp-note-form-row textarea {
+	width: 100%;
+	padding: 8px 12px;
+	border: 1px solid #d1d5db;
+	border-radius: 4px;
+	font-size: 14px;
+	font-family: inherit;
+}
+
+.temp-note-form-row textarea {
+	resize: vertical;
+	min-height: 60px;
+}
+
+.temp-note-form-actions {
+	display: flex;
+	gap: 10px;
+	justify-content: flex-end;
+}
 
 .header h1 {
 	font-size: 2em;
@@ -144,6 +274,7 @@ body {
 }
 
 .timeline-section {
+	flex: 2;
 	background: white;
 	border-radius: 4px;
 	box-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -690,6 +821,15 @@ body {
 @media (max-width: 768px) {
 	.container {
 		padding: 10px;
+	}
+	
+	.main-content {
+		flex-direction: column;
+		gap: 15px;
+	}
+	
+	.temp-notes-section {
+		max-height: 400px;
 	}
 	
 	.edit-mode .timeline-item {

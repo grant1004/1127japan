@@ -910,6 +910,150 @@ document.addEventListener('click', function(e) {
     }
 });
 
+// 暫時資訊管理系統
+window.tempNotes = [];
+
+// 載入暫時資訊
+function loadTempNotes() {
+	try {
+		const saved = localStorage.getItem('tempNotes');
+		if (saved) {
+			window.tempNotes = JSON.parse(saved);
+		}
+		renderTempNotes();
+	} catch (error) {
+		console.error('載入暫時資訊失敗:', error);
+		window.tempNotes = [];
+	}
+}
+
+// 儲存暫時資訊
+function saveTempNotes() {
+	try {
+		localStorage.setItem('tempNotes', JSON.stringify(window.tempNotes));
+	} catch (error) {
+		console.error('儲存暫時資訊失敗:', error);
+	}
+}
+
+// 渲染暫時資訊列表
+function renderTempNotes() {
+	const container = document.getElementById('tempNotesContent');
+	
+	if (window.tempNotes.length === 0) {
+		container.innerHTML = `
+			<div class="temp-notes-placeholder">
+				尚無暫時資訊
+			</div>
+		`;
+		return;
+	}
+	
+	container.innerHTML = window.tempNotes.map(note => `
+		<div class="temp-note-item" data-id="${note.id}">
+			<div class="temp-note-title">
+				<span>${note.title}</span>
+				<div class="temp-note-actions">
+					<button class="btn-icon" onclick="editTempNote('${note.id}')" title="編輯">✏️</button>
+					<button class="btn-icon" onclick="deleteTempNote('${note.id}')" title="刪除">🗑️</button>
+				</div>
+			</div>
+			<div class="temp-note-content">
+				${note.type === 'link' 
+					? `<a href="${note.content}" target="_blank" class="temp-note-link">${note.content}</a>`
+					: note.content
+				}
+			</div>
+		</div>
+	`).join('');
+}
+
+// 顯示新增表單
+function showAddTempNoteForm() {
+	const form = document.getElementById('tempNoteForm');
+	form.style.display = 'block';
+	
+	// 清空表單
+	document.getElementById('tempNoteTitle').value = '';
+	document.getElementById('tempNoteContent').value = '';
+	
+	// 聚焦到標題欄位
+	document.getElementById('tempNoteTitle').focus();
+}
+
+// 取消新增
+function cancelAddTempNote() {
+	const form = document.getElementById('tempNoteForm');
+	form.style.display = 'none';
+}
+
+// 儲存暫時資訊
+function saveTempNote() {
+	const title = document.getElementById('tempNoteTitle').value.trim();
+	const content = document.getElementById('tempNoteContent').value.trim();
+	
+	if (!title || !content) {
+		alert('請填寫標題和內容');
+		return;
+	}
+	
+	const newNote = {
+		id: `temp_${Date.now()}`,
+		title: title,
+		content: content,
+		type: content.match(/^https?:\/\//) ? 'link' : 'text',
+		createdAt: new Date().toISOString()
+	};
+	
+	window.tempNotes.unshift(newNote); // 新項目加到最前面
+	saveTempNotes();
+	renderTempNotes();
+	cancelAddTempNote();
+}
+
+// 編輯暫時資訊
+function editTempNote(noteId) {
+	const note = window.tempNotes.find(n => n.id === noteId);
+	if (!note) return;
+	
+	const newTitle = prompt('編輯標題：', note.title);
+	if (newTitle === null) return;
+	
+	const newContent = prompt('編輯內容：', note.content);
+	if (newContent === null) return;
+	
+	if (!newTitle.trim() || !newContent.trim()) {
+		alert('標題和內容不能為空');
+		return;
+	}
+	
+	// 更新資料
+	note.title = newTitle.trim();
+	note.content = newContent.trim();
+	note.type = note.content.match(/^https?:\/\//) ? 'link' : 'text';
+	note.updatedAt = new Date().toISOString();
+	
+	saveTempNotes();
+	renderTempNotes();
+}
+
+// 刪除暫時資訊
+function deleteTempNote(noteId) {
+	if (!confirm('確定要刪除這個暫時資訊嗎？')) return;
+	
+	window.tempNotes = window.tempNotes.filter(note => note.id !== noteId);
+	saveTempNotes();
+	renderTempNotes();
+}
+
+// 在頁面載入時初始化暫時資訊
+document.addEventListener('DOMContentLoaded', function() {
+	// 延遲載入以確保主要功能先載入完成
+	setTimeout(() => {
+		loadTempNotes();
+	}, 100);
+});
+
 // 導出給全域使用的函數
 window.itinerary = {
     loadItinerary,
@@ -922,4 +1066,16 @@ window.itinerary = {
     addNote: showAddNoteForm,
     editNote,
     deleteNote
+};
+
+// 暫時資訊功能導出
+window.tempNotesManager = {
+	loadTempNotes,
+	saveTempNotes,
+	renderTempNotes,
+	showAddTempNoteForm,
+	cancelAddTempNote,
+	saveTempNote,
+	editTempNote,
+	deleteTempNote
 };
