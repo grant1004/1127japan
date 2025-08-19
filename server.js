@@ -24,28 +24,33 @@ const activeConnections = new Set();
 
 // 1. 設定資料庫通知監聽
 async function setupDatabaseNotifications() {
-    const client = await notificationPool.connect();
-    
-    // 監聽 itinerary_changes 頻道
-    await client.query('LISTEN itinerary_changes');
-    
-    // 當收到通知時執行
-    client.on('notification', (msg) => {
-        console.log('📢 收到資料庫通知:', msg.payload);
+    try {
+        const client = await notificationPool.connect();
         
-        try {
-            const data = JSON.parse(msg.payload);
-            broadcastToAllClients({
-                type: 'itinerary_updated',
-                data: data,
-                timestamp: Date.now()
-            });
-        } catch (error) {
-            console.error('解析通知失敗:', error);
-        }
-    });
-    
-    console.log('✅ 資料庫通知監聽已啟動');
+        // 監聽 itinerary_changes 頻道
+        await client.query('LISTEN itinerary_changes');
+        
+        // 當收到通知時執行
+        client.on('notification', (msg) => {
+            console.log('📢 收到資料庫通知:', msg.payload);
+            
+            try {
+                const data = JSON.parse(msg.payload);
+                broadcastToAllClients({
+                    type: 'itinerary_updated',
+                    data: data,
+                    timestamp: Date.now()
+                });
+            } catch (error) {
+                console.error('解析通知失敗:', error);
+            }
+        });
+        
+        console.log('✅ 資料庫通知監聽已啟動');
+    } catch (error) {
+        console.log('⚠️ 無法設定資料庫通知，將使用檔案系統模式:', error.message);
+        // 在沒有資料庫的環境下，我們仍然可以繼續運行，只是沒有即時通知功能
+    }
 }
 
 // 2. 廣播給所有連接的客戶端
@@ -88,7 +93,21 @@ async function initializeDatabase() {
             );
         `;
         
+        // 新增：暫時資訊表
+        const createTempNotesQuery = `
+            CREATE TABLE IF NOT EXISTS temp_notes (
+                id SERIAL PRIMARY KEY,
+                note_id VARCHAR(50) UNIQUE NOT NULL,
+                title VARCHAR(255) NOT NULL,
+                content TEXT NOT NULL,
+                type VARCHAR(10) DEFAULT 'text',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `;
+        
         await pool.query(createTableQuery);
+        await pool.query(createTempNotesQuery);
         console.log('✅ 資料表已就緒');
         
         // 檢查是否有資料，沒有則插入預設資料
@@ -690,6 +709,220 @@ app.delete('/api/itinerary/notes/:itemId/:noteId', async (req, res) => {
     }
 });
 
+// ===== 暫時資訊 API =====
+
+// 載入所有暫時資訊
+async function loadTempNotesFromDb() {
+    try {
+        const query = 'SELECT * FROM temp_notes ORDER BY created_at DESC';
+        const result = await pool.query(query);
+        
+        return result.rows.map(row => ({
+            id: row.note_id,
+            title: row.title,
+            content: row.content,
+            type: row.type,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at
+        }));
+    } catch (error) {
+        console.error('載入暫時資訊失敗，使用檔案系統:', error.message);
+        return await loadTempNotesFromFile();
+    }
+}
+
+// 從檔案載入暫時資訊
+async function loadTempNotesFromFile() {
+    try {
+        const filePath = path.join(__dirname, 'data', 'temp_notes.json');
+        const data = await fs.readFile(filePath, 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
+        // 檔案不存在或其他錯誤，返回空陣列
+        return [];
+    }
+}
+
+// 儲存暫時資訊到資料庫
+async function saveTempNoteToDb(noteData) {
+    try {
+        const query = `
+            INSERT INTO temp_notes (note_id, title, content, type)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (note_id) 
+            DO UPDATE SET 
+                title = EXCLUDED.title,
+                content = EXCLUDED.content,
+                type = EXCLUDED.type,
+                updated_at = CURRENT_TIMESTAMP
+        `;
+        
+        await pool.query(query, [noteData.id, noteData.title, noteData.content, noteData.type]);
+        
+        // 發送通知
+        await notifyDataChange('temp_notes_updated', { noteId: noteData.id, action: 'upsert' });
+        
+        return true;
+    } catch (error) {
+        console.error('儲存暫時資訊失敗，使用檔案系統:', error.message);
+        return await saveTempNoteToFile(noteData);
+    }
+}
+
+// 儲存暫時資訊到檔案
+async function saveTempNoteToFile(noteData) {
+    try {
+        // 確保 data 資料夾存在
+        const dataDir = path.join(__dirname, 'data');
+        await fs.mkdir(dataDir, { recursive: true });
+        
+        const filePath = path.join(dataDir, 'temp_notes.json');
+        
+        // 載入現有資料
+        let tempNotes = [];
+        try {
+            const data = await fs.readFile(filePath, 'utf8');
+            tempNotes = JSON.parse(data);
+        } catch (error) {
+            // 檔案不存在，使用空陣列
+            tempNotes = [];
+        }
+        
+        // 檢查是否已存在，更新或新增
+        const existingIndex = tempNotes.findIndex(note => note.id === noteData.id);
+        if (existingIndex >= 0) {
+            // 更新現有項目
+            tempNotes[existingIndex] = {
+                ...noteData,
+                updatedAt: new Date().toISOString()
+            };
+        } else {
+            // 新增項目
+            tempNotes.unshift({
+                ...noteData,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            });
+        }
+        
+        // 儲存到檔案
+        await fs.writeFile(filePath, JSON.stringify(tempNotes, null, 2));
+        
+        // 發送通知（即使在檔案模式下也發送，供 SSE 使用）
+        broadcastToAllClients({
+            type: 'temp_notes_updated',
+            data: { noteId: noteData.id, action: 'upsert' },
+            timestamp: Date.now()
+        });
+        
+        return true;
+    } catch (error) {
+        console.error('儲存暫時資訊到檔案失敗:', error);
+        return false;
+    }
+}
+
+// 刪除暫時資訊
+async function deleteTempNoteFromDb(noteId) {
+    try {
+        const query = 'DELETE FROM temp_notes WHERE note_id = $1';
+        await pool.query(query, [noteId]);
+        
+        // 發送通知
+        await notifyDataChange('temp_notes_updated', { noteId, action: 'delete' });
+        
+        return true;
+    } catch (error) {
+        console.error('刪除暫時資訊失敗，使用檔案系統:', error.message);
+        return await deleteTempNoteFromFile(noteId);
+    }
+}
+
+// 從檔案刪除暫時資訊
+async function deleteTempNoteFromFile(noteId) {
+    try {
+        const filePath = path.join(__dirname, 'data', 'temp_notes.json');
+        
+        // 載入現有資料
+        let tempNotes = [];
+        try {
+            const data = await fs.readFile(filePath, 'utf8');
+            tempNotes = JSON.parse(data);
+        } catch (error) {
+            // 檔案不存在，無需刪除
+            return true;
+        }
+        
+        // 過濾掉要刪除的項目
+        const filteredNotes = tempNotes.filter(note => note.id !== noteId);
+        
+        // 儲存到檔案
+        await fs.writeFile(filePath, JSON.stringify(filteredNotes, null, 2));
+        
+        // 發送通知
+        broadcastToAllClients({
+            type: 'temp_notes_updated',
+            data: { noteId, action: 'delete' },
+            timestamp: Date.now()
+        });
+        
+        return true;
+    } catch (error) {
+        console.error('從檔案刪除暫時資訊失敗:', error);
+        return false;
+    }
+}
+
+// 獲取所有暫時資訊
+app.get('/api/temp-notes', async (req, res) => {
+    try {
+        const tempNotes = await loadTempNotesFromDb();
+        res.json(tempNotes);
+    } catch (error) {
+        console.error('讀取暫時資訊失敗:', error);
+        res.status(500).json({ error: '讀取暫時資訊失敗' });
+    }
+});
+
+// 新增或更新暫時資訊
+app.post('/api/temp-notes', async (req, res) => {
+    try {
+        const noteData = req.body;
+        
+        if (!noteData.id || !noteData.title || !noteData.content) {
+            return res.status(400).json({ error: '缺少必要欄位' });
+        }
+        
+        const success = await saveTempNoteToDb(noteData);
+        
+        if (success) {
+            res.json({ success: true, message: '暫時資訊已儲存' });
+        } else {
+            res.status(500).json({ error: '儲存失敗' });
+        }
+    } catch (error) {
+        console.error('新增暫時資訊失敗:', error);
+        res.status(500).json({ error: '新增暫時資訊失敗' });
+    }
+});
+
+// 刪除暫時資訊
+app.delete('/api/temp-notes/:noteId', async (req, res) => {
+    try {
+        const { noteId } = req.params;
+        const success = await deleteTempNoteFromDb(noteId);
+        
+        if (success) {
+            res.json({ success: true, message: '暫時資訊已刪除' });
+        } else {
+            res.status(500).json({ error: '刪除失敗' });
+        }
+    } catch (error) {
+        console.error('刪除暫時資訊失敗:', error);
+        res.status(500).json({ error: '刪除暫時資訊失敗' });
+    }
+});
+
 
 // 版本資訊 API
 app.get('/api/version', (req, res) => {
@@ -810,7 +1043,13 @@ app.put('/api/itinerary/move-item', async (req, res) => {
 // 啟動伺服器
 app.listen(PORT, async () => {
     console.log(`🚀 伺服器運行在 port ${PORT}`);
-    await initializeDatabase();
+    
+    try {
+        await initializeDatabase();
+    } catch (error) {
+        console.log('⚠️ 資料庫無法使用，將使用檔案系統儲存:', error.message);
+    }
+    
     await setupDatabaseNotifications(); // 🔔 啟動通知監聽
 });
 

@@ -913,26 +913,102 @@ document.addEventListener('click', function(e) {
 // 暫時資訊管理系統
 window.tempNotes = [];
 
-// 載入暫時資訊
-function loadTempNotes() {
+// 載入暫時資訊 - 從伺服器
+async function loadTempNotes() {
 	try {
-		const saved = localStorage.getItem('tempNotes');
-		if (saved) {
-			window.tempNotes = JSON.parse(saved);
+		console.log('📝 開始載入暫時資訊...');
+		
+		// 先嘗試從伺服器載入
+		try {
+			const response = await fetch('/api/temp-notes');
+			if (response.ok) {
+				const serverNotes = await response.json();
+				window.tempNotes = serverNotes;
+				console.log(`✅ 從伺服器載入了 ${serverNotes.length} 個暫時資訊`);
+			} else {
+				throw new Error('伺服器無法取得暫時資訊');
+			}
+		} catch (apiError) {
+			console.log('⚠️ 無法從伺服器載入，嘗試 localStorage:', apiError.message);
+			// 如果伺服器失敗，使用 localStorage 作為備用
+			const saved = localStorage.getItem('tempNotes');
+			if (saved) {
+				window.tempNotes = JSON.parse(saved);
+				console.log(`📦 從本地載入了 ${window.tempNotes.length} 個暫時資訊`);
+			} else {
+				window.tempNotes = [];
+			}
 		}
+		
 		renderTempNotes();
 	} catch (error) {
 		console.error('載入暫時資訊失敗:', error);
 		window.tempNotes = [];
+		renderTempNotes();
 	}
 }
 
-// 儲存暫時資訊
-function saveTempNotes() {
+// 儲存暫時資訊 - 同步到伺服器
+async function saveTempNote(noteData) {
 	try {
-		localStorage.setItem('tempNotes', JSON.stringify(window.tempNotes));
+		// 先儲存到伺服器
+		const response = await fetch('/api/temp-notes', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(noteData)
+		});
+		
+		if (!response.ok) {
+			throw new Error('伺服器儲存失敗');
+		}
+		
+		console.log('✅ 暫時資訊已同步到伺服器');
+		return true;
+		
 	} catch (error) {
-		console.error('儲存暫時資訊失敗:', error);
+		console.error('同步到伺服器失敗:', error);
+		
+		// 如果伺服器失敗，至少存到 localStorage
+		try {
+			localStorage.setItem('tempNotes', JSON.stringify(window.tempNotes));
+			console.log('💾 已備份到 localStorage');
+		} catch (localError) {
+			console.error('本地備份也失敗:', localError);
+		}
+		
+		throw error; // 重新拋出錯誤讓調用者知道
+	}
+}
+
+// 刪除暫時資訊 - 從伺服器
+async function deleteTempNoteFromServer(noteId) {
+	try {
+		const response = await fetch(`/api/temp-notes/${noteId}`, {
+			method: 'DELETE'
+		});
+		
+		if (!response.ok) {
+			throw new Error('伺服器刪除失敗');
+		}
+		
+		console.log('✅ 暫時資訊已從伺服器刪除');
+		return true;
+		
+	} catch (error) {
+		console.error('從伺服器刪除失敗:', error);
+		
+		// 如果伺服器失敗，至少從本地刪除
+		try {
+			window.tempNotes = window.tempNotes.filter(note => note.id !== noteId);
+			localStorage.setItem('tempNotes', JSON.stringify(window.tempNotes));
+			console.log('💾 已從本地刪除');
+		} catch (localError) {
+			console.error('本地刪除也失敗:', localError);
+		}
+		
+		throw error;
 	}
 }
 
@@ -988,7 +1064,7 @@ function cancelAddTempNote() {
 }
 
 // 儲存暫時資訊
-function saveTempNote() {
+async function saveTempNoteFromForm() {
 	const title = document.getElementById('tempNoteTitle').value.trim();
 	const content = document.getElementById('tempNoteContent').value.trim();
 	
@@ -1005,14 +1081,32 @@ function saveTempNote() {
 		createdAt: new Date().toISOString()
 	};
 	
-	window.tempNotes.unshift(newNote); // 新項目加到最前面
-	saveTempNotes();
-	renderTempNotes();
-	cancelAddTempNote();
+	try {
+		// 先更新本地資料
+		window.tempNotes.unshift(newNote);
+		
+		// 同步到伺服器
+		await saveTempNote(newNote);
+		
+		// 成功後更新 UI
+		renderTempNotes();
+		cancelAddTempNote();
+		
+		console.log('✅ 暫時資訊已新增');
+	} catch (error) {
+		// 如果伺服器失敗，仍然顯示本地變更，但給用戶警告
+		renderTempNotes();
+		cancelAddTempNote();
+		
+		console.error('新增暫時資訊失敗:', error);
+		if (window.notification && window.notification.showNotification) {
+			window.notification.showNotification('⚠️ 暫時資訊已新增，但未能同步到伺服器', 'warning', 5000);
+		}
+	}
 }
 
 // 編輯暫時資訊
-function editTempNote(noteId) {
+async function editTempNote(noteId) {
 	const note = window.tempNotes.find(n => n.id === noteId);
 	if (!note) return;
 	
@@ -1027,23 +1121,71 @@ function editTempNote(noteId) {
 		return;
 	}
 	
-	// 更新資料
+	// 備份原始資料
+	const originalTitle = note.title;
+	const originalContent = note.content;
+	const originalType = note.type;
+	
+	// 更新本地資料
 	note.title = newTitle.trim();
 	note.content = newContent.trim();
 	note.type = note.content.match(/^https?:\/\//) ? 'link' : 'text';
 	note.updatedAt = new Date().toISOString();
 	
-	saveTempNotes();
-	renderTempNotes();
+	try {
+		// 同步到伺服器
+		await saveTempNote(note);
+		
+		// 成功後更新 UI
+		renderTempNotes();
+		console.log('✅ 暫時資訊已更新');
+	} catch (error) {
+		// 如果失敗，恢復原始資料
+		note.title = originalTitle;
+		note.content = originalContent;
+		note.type = originalType;
+		
+		renderTempNotes();
+		console.error('更新暫時資訊失敗:', error);
+		
+		if (window.notification && window.notification.showNotification) {
+			window.notification.showNotification('⚠️ 更新失敗，請稍後重試', 'error', 3000);
+		} else {
+			alert('更新失敗，請稍後重試');
+		}
+	}
 }
 
 // 刪除暫時資訊
-function deleteTempNote(noteId) {
+async function deleteTempNote(noteId) {
 	if (!confirm('確定要刪除這個暫時資訊嗎？')) return;
 	
+	// 備份原始資料（以防需要恢復）
+	const originalNotes = [...window.tempNotes];
+	
+	// 先從本地移除
 	window.tempNotes = window.tempNotes.filter(note => note.id !== noteId);
-	saveTempNotes();
-	renderTempNotes();
+	
+	try {
+		// 同步到伺服器
+		await deleteTempNoteFromServer(noteId);
+		
+		// 成功後更新 UI
+		renderTempNotes();
+		console.log('✅ 暫時資訊已刪除');
+	} catch (error) {
+		// 如果失敗，恢復原始資料
+		window.tempNotes = originalNotes;
+		
+		renderTempNotes();
+		console.error('刪除暫時資訊失敗:', error);
+		
+		if (window.notification && window.notification.showNotification) {
+			window.notification.showNotification('⚠️ 刪除失敗，請稍後重試', 'error', 3000);
+		} else {
+			alert('刪除失敗，請稍後重試');
+		}
+	}
 }
 
 // 在頁面載入時初始化暫時資訊
@@ -1071,11 +1213,10 @@ window.itinerary = {
 // 暫時資訊功能導出
 window.tempNotesManager = {
 	loadTempNotes,
-	saveTempNotes,
 	renderTempNotes,
 	showAddTempNoteForm,
 	cancelAddTempNote,
-	saveTempNote,
+	saveTempNoteFromForm,
 	editTempNote,
 	deleteTempNote
 };

@@ -58,6 +58,12 @@ class DatabaseNotificationClient {
                 this.showUpdateNotification();
                 break;
                 
+            case 'temp_notes_updated':
+                console.log('📝 暫時資訊已更新');
+                this.refreshTempNotes();
+                this.showTempNotesUpdateNotification();
+                break;
+                
             case 'heartbeat':
                 // 靜默處理心跳
                 break;
@@ -151,6 +157,22 @@ class DatabaseNotificationClient {
 
     showUpdateNotification() {
         this.showNotification('📝 行程已更新！', 'success');
+    }
+
+    async refreshTempNotes() {
+        try {
+            // 只有在暫時資訊模組存在時才重新整理
+            if (window.tempNotesManager && window.tempNotesManager.loadTempNotes) {
+                await window.tempNotesManager.loadTempNotes();
+                console.log('✅ 暫時資訊已重新載入');
+            }
+        } catch (error) {
+            console.error('重新載入暫時資訊失敗:', error);
+        }
+    }
+
+    showTempNotesUpdateNotification() {
+        this.showNotification('📝 暫時資訊已更新！', 'success');
     }
 
     showConflictNotification() {
