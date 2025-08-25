@@ -1,4 +1,6 @@
 window.currentItinerary = null;
+window.currentItineraryId = null;
+window.allItineraries = [];
 window.isEditMode = false;
 let originalItinerary = null;
 
@@ -97,78 +99,344 @@ const defaultItinerary = {
 	]
 };
 
-// 載入行程資料
-async function loadItinerary() {
+// ===== 頁面管理功能 =====
+
+// 載入所有行程列表
+async function loadAllItineraries() {
 	try {
-		setStatus('loading', '載入中...');
-		
-		// 嘗試從API載入，如果失敗則使用預設資料
-		try {
-			const response = await fetch('/api/itinerary');
-			if (response.ok) {
-				const data = await response.json();
-				
-				// 🔥 修正：根據實際資料庫結構載入
-				window.currentItinerary = {
-					title: data.title,
-					subtitle: data.subtitle,
-					days: data.days
-				};
-				
-				// 🔥 修正：備註資料直接從 API 回應中獲取
-				window.itemNotes = data.notes || {};
-				
-				console.log('✅ 從 API 載入資料:', { 
-					title: data.title, 
-					daysCount: data.days?.length, 
-					notesCount: Object.keys(window.itemNotes).length 
-				});
-			} else {
-				throw new Error('API not available');
-			}
-		} catch (apiError) {
-			console.log('API載入失敗，使用預設資料:', apiError.message);
-			window.currentItinerary = defaultItinerary;
-			// 使用預設備註資料
-			window.itemNotes = {
-				"item1": [
-					{
-						id: "note1",
-						priority: "high",
-						description: "交通提醒",
-						content: "https://www.kansai-airport.or.jp/",
-						type: "link"
-					},
-					{
-						id: "note2",
-						priority: "medium",
-						description: "注意事項",
-						content: "記得帶護照影本",
-						type: "text"
-					}
-				],
-				"item3": [
-					{
-						id: "note3",
-						priority: "low",
-						description: "美食推薦",
-						content: "https://tabelog.com/osaka/",
-						type: "link"
-					}
-				]
-			};
+		const response = await fetch('/api/itineraries');
+		if (response.ok) {
+			window.allItineraries = await response.json();
+			console.log('✅ 載入行程列表:', window.allItineraries.length, '個行程');
+			return window.allItineraries;
+		} else {
+			throw new Error('無法載入行程列表');
 		}
-		
-		renderItinerary();
-		setStatus('saved', '已載入');
-		console.log('📝 載入的備註資料:', window.itemNotes);
 	} catch (error) {
-		console.error('載入行程失敗:', error);
-		setStatus('error', '載入失敗');
+		console.error('載入行程列表失敗:', error);
+		window.allItineraries = [];
+		return [];
 	}
 }
 
-// 儲存行程資料
+// 載入指定ID的行程
+async function loadItineraryById(id) {
+	try {
+		setStatus('loading', '載入中...');
+		
+		const response = await fetch(`/api/itinerary/${id}`);
+		if (response.ok) {
+			const data = await response.json();
+			
+			window.currentItinerary = {
+				title: data.title,
+				subtitle: data.subtitle,
+				days: data.days
+			};
+			window.currentItineraryId = data.id;
+			window.itemNotes = data.notes || {};
+			
+			console.log('✅ 載入指定行程:', { 
+				id: data.id, 
+				title: data.title, 
+				daysCount: data.days?.length 
+			});
+			
+			updatePageTitle(data.title);
+			renderItinerary();
+			setStatus('saved', '已載入');
+			return true;
+		} else {
+			throw new Error('無法載入指定行程');
+		}
+	} catch (error) {
+		console.error('載入指定行程失敗:', error);
+		setStatus('error', '載入失敗');
+		return false;
+	}
+}
+
+// 載入行程資料 (修改版，支援多頁面)
+async function loadItinerary(id = null) {
+	try {
+		// 先載入所有行程列表以更新選單
+		await loadAllItineraries();
+		await updatePageSelector();
+		
+		if (id) {
+			// 載入指定 ID 的行程
+			return await loadItineraryById(id);
+		} else {
+			// 載入最新的行程（向後相容）
+			setStatus('loading', '載入中...');
+			
+			try {
+				const response = await fetch('/api/itinerary');
+				if (response.ok) {
+					const data = await response.json();
+					
+					window.currentItinerary = {
+						title: data.title,
+						subtitle: data.subtitle,
+						days: data.days
+					};
+					window.currentItineraryId = data.id;
+					window.itemNotes = data.notes || {};
+					
+					console.log('✅ 載入最新行程:', { 
+						id: data.id,
+						title: data.title, 
+						daysCount: data.days?.length, 
+						notesCount: Object.keys(window.itemNotes).length 
+					});
+					
+					updatePageTitle(data.title);
+					renderItinerary();
+					setStatus('saved', '已載入');
+					return true;
+				} else {
+					throw new Error('API not available');
+				}
+			} catch (apiError) {
+				console.log('API載入失敗，使用預設資料:', apiError.message);
+				window.currentItinerary = defaultItinerary;
+				window.currentItineraryId = null;
+				// 使用預設備註資料
+				window.itemNotes = {
+					"item1": [
+						{
+							id: "note1",
+							priority: "high",
+							description: "交通提醒",
+							content: "https://www.kansai-airport.or.jp/",
+							type: "link"
+						}
+					]
+				};
+				
+				updatePageTitle(defaultItinerary.title);
+				renderItinerary();
+				setStatus('saved', '已載入');
+				return true;
+			}
+		}
+	} catch (error) {
+		console.error('載入行程失敗:', error);
+		setStatus('error', '載入失敗');
+		return false;
+	}
+}
+
+// 更新頁面標題
+function updatePageTitle(title) {
+	document.getElementById('title').textContent = title;
+	const currentPageTitle = document.getElementById('currentPageTitle');
+	if (currentPageTitle) {
+		currentPageTitle.textContent = title;
+	}
+}
+
+// 更新頁面選擇器
+async function updatePageSelector() {
+	const pageList = document.getElementById('pageList');
+	
+	if (window.allItineraries.length === 0) {
+		pageList.innerHTML = '<div class="loading-pages">尚無行程</div>';
+		return;
+	}
+	
+	let html = '';
+	window.allItineraries.forEach(itinerary => {
+		const isActive = window.currentItineraryId === itinerary.id;
+		const createdDate = new Date(itinerary.createdAt).toLocaleDateString('zh-TW');
+		const updatedDate = new Date(itinerary.updatedAt).toLocaleDateString('zh-TW');
+		
+		html += `
+			<div class="page-item ${isActive ? 'active' : ''}" onclick="switchToPage(${itinerary.id})">
+				<div class="page-item-content">
+					<div class="page-item-title">${itinerary.title}</div>
+					<div class="page-item-subtitle">${itinerary.subtitle || ''}</div>
+					<div class="page-item-meta">建立: ${createdDate} | 更新: ${updatedDate}</div>
+				</div>
+				<div class="page-item-actions">
+					<button class="page-action-btn delete" onclick="deletePage(${itinerary.id}, event)" title="刪除">🗑️</button>
+				</div>
+			</div>
+		`;
+	});
+	
+	pageList.innerHTML = html;
+}
+
+// 切換頁面選擇器顯示狀態
+function togglePageSelector() {
+	const dropdown = document.getElementById('pageDropdown');
+	const btn = document.getElementById('pageSelectorBtn');
+	
+	dropdown.classList.toggle('show');
+	btn.classList.toggle('active');
+	
+	if (dropdown.classList.contains('show')) {
+		// 載入最新的行程列表
+		loadAllItineraries().then(updatePageSelector);
+		
+		// 點擊外部關閉
+		setTimeout(() => {
+			document.addEventListener('click', closePageSelectorOnOutsideClick);
+		}, 10);
+	} else {
+		document.removeEventListener('click', closePageSelectorOnOutsideClick);
+	}
+}
+
+// 點擊外部關閉頁面選擇器
+function closePageSelectorOnOutsideClick(event) {
+	const pageManager = document.querySelector('.page-manager');
+	if (!pageManager.contains(event.target)) {
+		const dropdown = document.getElementById('pageDropdown');
+		const btn = document.getElementById('pageSelectorBtn');
+		
+		dropdown.classList.remove('show');
+		btn.classList.remove('active');
+		document.removeEventListener('click', closePageSelectorOnOutsideClick);
+	}
+}
+
+// 切換到指定頁面
+async function switchToPage(id) {
+	if (id === window.currentItineraryId) {
+		// 已經是當前頁面，直接關閉選擇器
+		togglePageSelector();
+		return;
+	}
+	
+	// 關閉頁面選擇器
+	togglePageSelector();
+	
+	// 載入指定頁面
+	const success = await loadItineraryById(id);
+	if (success) {
+		// 更新選擇器
+		await updatePageSelector();
+		console.log('✅ 已切換到頁面:', id);
+	}
+}
+
+// 創建新頁面
+async function createNewPage() {
+	const title = prompt('請輸入新行程標題:');
+	if (!title) return;
+	
+	const subtitle = prompt('請輸入新行程副標題 (可選):') || '';
+	
+	try {
+		setStatus('loading', '創建中...');
+		
+		// 使用當前行程作為範本，但清空資料
+		const newItinerary = {
+			title: title,
+			subtitle: subtitle,
+			days: [
+				{
+					id: "day1",
+					date: new Date().toLocaleDateString('zh-TW'),
+					title: "第一天",
+					accommodation: "",
+					items: []
+				}
+			],
+			notes: {}
+		};
+		
+		const response = await fetch('/api/itinerary', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(newItinerary)
+		});
+		
+		if (response.ok) {
+			const result = await response.json();
+			console.log('✅ 新行程已創建:', result.id);
+			
+			// 重新載入行程列表
+			await loadAllItineraries();
+			
+			// 切換到新創建的頁面
+			await loadItineraryById(result.id);
+			
+			// 更新選擇器
+			await updatePageSelector();
+			
+			// 關閉頁面選擇器
+			togglePageSelector();
+			
+			setStatus('saved', '新行程已創建');
+		} else {
+			throw new Error('創建失敗');
+		}
+	} catch (error) {
+		console.error('創建新頁面失敗:', error);
+		setStatus('error', '創建失敗');
+		alert('創建新行程失敗，請稍後再試');
+	}
+}
+
+// 刪除頁面
+async function deletePage(id, event) {
+	// 阻止事件冒泡，避免觸發頁面切換
+	event.stopPropagation();
+	
+	if (window.allItineraries.length <= 1) {
+		alert('至少需要保留一個行程');
+		return;
+	}
+	
+	const itinerary = window.allItineraries.find(item => item.id === id);
+	if (!itinerary) return;
+	
+	const confirmDelete = confirm(`確定要刪除行程「${itinerary.title}」嗎？\n\n此操作無法復原。`);
+	if (!confirmDelete) return;
+	
+	try {
+		setStatus('loading', '刪除中...');
+		
+		const response = await fetch(`/api/itinerary/${id}`, {
+			method: 'DELETE'
+		});
+		
+		if (response.ok) {
+			console.log('✅ 行程已刪除:', id);
+			
+			// 重新載入行程列表
+			await loadAllItineraries();
+			
+			// 如果刪除的是當前頁面，切換到第一個可用頁面
+			if (window.currentItineraryId === id) {
+				if (window.allItineraries.length > 0) {
+					await loadItineraryById(window.allItineraries[0].id);
+				} else {
+					// 所有行程都被刪除了，載入預設行程
+					await loadItinerary();
+				}
+			}
+			
+			// 更新選擇器
+			await updatePageSelector();
+			
+			setStatus('saved', '行程已刪除');
+		} else {
+			throw new Error('刪除失敗');
+		}
+	} catch (error) {
+		console.error('刪除頁面失敗:', error);
+		setStatus('error', '刪除失敗');
+		alert('刪除行程失敗，請稍後再試');
+	}
+}
+
+// 儲存行程資料 (支援多頁面)
 async function saveItinerary() {
     try {
         setStatus('saving', '儲存中...');
@@ -182,9 +450,20 @@ async function saveItinerary() {
             notes: window.itemNotes
         };
         
-        // 真正儲存到伺服器
-        const response = await fetch('/api/itinerary', {
-            method: 'POST',
+        // 根據是否有 currentItineraryId 決定使用 PUT 還是 POST
+        let url, method;
+        if (window.currentItineraryId) {
+            // 更新現有行程
+            url = `/api/itinerary/${window.currentItineraryId}`;
+            method = 'PUT';
+        } else {
+            // 創建新行程 (向後相容)
+            url = '/api/itinerary';
+            method = 'POST';
+        }
+        
+        const response = await fetch(url, {
+            method: method,
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -196,6 +475,12 @@ async function saveItinerary() {
         }
         
         const result = await response.json();
+        
+        // 如果是創建新行程，更新 currentItineraryId
+        if (!window.currentItineraryId && result.id) {
+            window.currentItineraryId = result.id;
+        }
+        
         console.log('儲存成功:', result);
         
         setStatus('saved', '已儲存');
@@ -219,7 +504,7 @@ async function saveItinerary() {
     }
 }
 
-// 專門用於備註的儲存函數 - 不會觸發 exitEditMode
+// 專門用於備註的儲存函數 - 不會觸發 exitEditMode (支援多頁面)
 async function saveNotesOnly() {
     try {
         setStatus('saving', '儲存備註中...');
@@ -230,9 +515,20 @@ async function saveNotesOnly() {
             notes: window.itemNotes
         };
         
-        // 真正儲存到伺服器
-        const response = await fetch('/api/itinerary', {
-            method: 'POST',
+        // 根據是否有 currentItineraryId 決定使用 PUT 還是 POST
+        let url, method;
+        if (window.currentItineraryId) {
+            // 更新現有行程
+            url = `/api/itinerary/${window.currentItineraryId}`;
+            method = 'PUT';
+        } else {
+            // 創建新行程 (向後相容)
+            url = '/api/itinerary';
+            method = 'POST';
+        }
+        
+        const response = await fetch(url, {
+            method: method,
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -244,6 +540,12 @@ async function saveNotesOnly() {
         }
         
         const result = await response.json();
+        
+        // 如果是創建新行程，更新 currentItineraryId
+        if (!window.currentItineraryId && result.id) {
+            window.currentItineraryId = result.id;
+        }
+        
         console.log('備註儲存成功:', result);
         
         setStatus('saved', '備註已儲存');

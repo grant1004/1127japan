@@ -148,6 +148,7 @@ async function saveItineraryToDb(itineraryData) {
         const query = `
             INSERT INTO itinerary (title, subtitle, data, updated_at)
             VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+            RETURNING id
         `;
         
         const values = [
@@ -159,42 +160,69 @@ async function saveItineraryToDb(itineraryData) {
             }
         ];
         
-        await pool.query(query, values);
+        const result = await pool.query(query, values);
         console.log('✅ 資料已儲存到資料庫');
-        return true;
+        return result.rows[0].id; // 返回新創建的 ID
     } catch (error) {
         console.error('儲存到資料庫失敗:', error);
         throw error;
     }
 }
 
-async function updateItineraryInDb(itineraryData) {
+async function updateItineraryInDb(itineraryData, id = null) {
     const client = await pool.connect();
     
     try {
         await client.query('BEGIN');
         
-        const updateQuery = `
-            UPDATE itinerary 
-            SET title = $1, subtitle = $2, data = $3, updated_at = CURRENT_TIMESTAMP
-            WHERE id = (SELECT id FROM itinerary ORDER BY updated_at DESC LIMIT 1)
-        `;
+        let updateQuery, values;
         
-        const values = [
-            itineraryData.title,
-            itineraryData.subtitle,
-            { 
-                days: itineraryData.days,
-                notes: itineraryData.notes || {}  // 🔥 確保包含備註
-            }
-        ];
+        if (id) {
+            // 更新指定 ID 的行程
+            updateQuery = `
+                UPDATE itinerary 
+                SET title = $1, subtitle = $2, data = $3, updated_at = CURRENT_TIMESTAMP
+                WHERE id = $4
+                RETURNING id, title
+            `;
+            values = [
+                itineraryData.title,
+                itineraryData.subtitle,
+                { 
+                    days: itineraryData.days,
+                    notes: itineraryData.notes || {}
+                },
+                id
+            ];
+        } else {
+            // 更新最新的行程（向後相容）
+            updateQuery = `
+                UPDATE itinerary 
+                SET title = $1, subtitle = $2, data = $3, updated_at = CURRENT_TIMESTAMP
+                WHERE id = (SELECT id FROM itinerary ORDER BY updated_at DESC LIMIT 1)
+                RETURNING id, title
+            `;
+            values = [
+                itineraryData.title,
+                itineraryData.subtitle,
+                { 
+                    days: itineraryData.days,
+                    notes: itineraryData.notes || {}
+                }
+            ];
+        }
         
-        await client.query(updateQuery, values);
+        const result = await client.query(updateQuery, values);
         
-        // 通知邏輯保持不變
+        if (result.rows.length === 0) {
+            throw new Error('無法找到要更新的行程');
+        }
+        
+        // 通知邏輯
         const notifyPayload = JSON.stringify({
             action: 'update',
-            title: itineraryData.title,
+            id: result.rows[0].id,
+            title: result.rows[0].title,
             updatedAt: new Date().toISOString()
         });
         
@@ -203,6 +231,8 @@ async function updateItineraryInDb(itineraryData) {
 		
         await client.query('COMMIT');
         console.log('✅ 資料已更新並發送通知');
+        
+        return result.rows[0].id; // 返回更新的行程 ID
         
     } catch (error) {
         await client.query('ROLLBACK');
@@ -213,19 +243,35 @@ async function updateItineraryInDb(itineraryData) {
 }
 
 // 在您的後端程式碼中修改
-async function loadItineraryFromDb() {
+async function loadItineraryFromDb(id = null) {
     try {
-        const query = 'SELECT * FROM itinerary ORDER BY updated_at DESC LIMIT 1';
-        const result = await pool.query(query);
+        let query, values;
+        
+        if (id) {
+            // 載入指定 ID 的行程
+            query = 'SELECT * FROM itinerary WHERE id = $1';
+            values = [id];
+        } else {
+            // 載入最新的行程
+            query = 'SELECT * FROM itinerary ORDER BY updated_at DESC LIMIT 1';
+            values = [];
+        }
+        
+        const result = await pool.query(query, values);
         
         if (result.rows.length === 0) {
-            return getDefaultItinerary();
+            if (id) {
+                return null; // 指定 ID 不存在
+            } else {
+                return getDefaultItinerary(); // 沒有任何行程時返回預設
+            }
         }
         
         const row = result.rows[0];
         
-        // 🔥 修正：返回完整的資料結構，包含 notes
+        // 🔥 修正：返回完整的資料結構，包含 notes 和 id
         return {
+            id: row.id,
             title: row.title,
             subtitle: row.subtitle,
             days: row.data.days || [],
@@ -233,7 +279,20 @@ async function loadItineraryFromDb() {
         };
     } catch (error) {
         console.error('從資料庫讀取失敗:', error);
-        return getDefaultItinerary();
+        if (id) {
+            // 在沒有資料庫時，如果請求的是 ID 1，返回預設行程
+            if (id == 1) {
+                const defaultItinerary = getDefaultItinerary();
+                return {
+                    id: 1,
+                    ...defaultItinerary
+                };
+            } else {
+                return null; // 其他 ID 不存在
+            }
+        } else {
+            return getDefaultItinerary();
+        }
     }
 }
 
@@ -516,7 +575,62 @@ function getDefaultItinerary() {
 
 // API 路由
 
-// 獲取行程資料
+// ===== 多頁面管理 API =====
+
+// 取得所有行程列表
+app.get('/api/itineraries', async (req, res) => {
+    try {
+        const query = 'SELECT id, title, subtitle, created_at, updated_at FROM itinerary ORDER BY updated_at DESC';
+        const result = await pool.query(query);
+        
+        const itineraries = result.rows.map(row => ({
+            id: row.id,
+            title: row.title,
+            subtitle: row.subtitle,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at
+        }));
+        
+        res.json(itineraries);
+    } catch (error) {
+        console.error('讀取行程列表失敗，返回預設列表:', error.message);
+        
+        // 回退到文件系統模式 - 返回預設行程列表
+        const defaultItinerary = getDefaultItinerary();
+        const now = new Date().toISOString();
+        
+        res.json([{
+            id: 1,
+            title: defaultItinerary.title,
+            subtitle: defaultItinerary.subtitle,
+            createdAt: now,
+            updatedAt: now
+        }]);
+    }
+});
+
+// 獲取指定 ID 的行程資料
+app.get('/api/itinerary/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const itinerary = await loadItineraryFromDb(id);
+        if (!itinerary) {
+            return res.status(404).json({ error: '找不到指定的行程' });
+        }
+        res.json(itinerary);
+    } catch (error) {
+        console.error('讀取行程資料失敗，回退到預設資料:', error.message);
+        
+        // 回退到預設行程
+        const defaultItinerary = getDefaultItinerary();
+        res.json({
+            id: 1,
+            ...defaultItinerary
+        });
+    }
+});
+
+// 獲取最新行程資料（保持向後相容）
 app.get('/api/itinerary', async (req, res) => {
     try {
         const itinerary = await loadItineraryFromDb();
@@ -527,15 +641,61 @@ app.get('/api/itinerary', async (req, res) => {
     }
 });
 
-// 儲存行程資料
+// 刪除指定行程
+app.delete('/api/itinerary/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // 檢查是否存在
+        const checkQuery = 'SELECT COUNT(*) FROM itinerary WHERE id = $1';
+        const checkResult = await pool.query(checkQuery, [id]);
+        
+        if (parseInt(checkResult.rows[0].count) === 0) {
+            return res.status(404).json({ error: '找不到指定的行程' });
+        }
+        
+        // 刪除行程
+        const deleteQuery = 'DELETE FROM itinerary WHERE id = $1';
+        await pool.query(deleteQuery, [id]);
+        
+        res.json({ success: true, message: '行程已刪除' });
+    } catch (error) {
+        console.error('刪除行程失敗:', error);
+        res.status(500).json({ error: '刪除行程失敗' });
+    }
+});
+
+// 創建新行程
 app.post('/api/itinerary', async (req, res) => {
     try {
         const itinerary = req.body;
-        await updateItineraryInDb(itinerary);
-        res.json({ success: true, message: '行程已成功儲存到資料庫' });
+        const newId = await saveItineraryToDb(itinerary);
+        res.json({ 
+            success: true, 
+            message: '新行程已成功創建',
+            id: newId
+        });
     } catch (error) {
-        console.error('儲存行程資料失敗:', error);
-        res.status(500).json({ error: '儲存行程資料失敗' });
+        console.error('創建行程失敗:', error);
+        res.status(500).json({ error: '創建行程失敗' });
+    }
+});
+
+// 更新指定行程
+app.put('/api/itinerary/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const itinerary = req.body;
+        
+        const updatedId = await updateItineraryInDb(itinerary, id);
+        res.json({ 
+            success: true, 
+            message: '行程已成功更新',
+            id: updatedId
+        });
+    } catch (error) {
+        console.error('更新行程失敗:', error);
+        res.status(500).json({ error: '更新行程失敗' });
     }
 });
 

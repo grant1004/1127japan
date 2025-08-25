@@ -24,6 +24,26 @@
 	<div class="header">
 		<div class="status-indicator" id="statusIndicator">已儲存</div>
 		
+		<!-- 頁面管理選單 -->
+		<div class="page-manager">
+			<button class="page-selector-btn" id="pageSelectorBtn" onclick="togglePageSelector()">
+				<span id="currentPageTitle">載入中...</span>
+				<span class="dropdown-arrow">▼</span>
+			</button>
+			<div class="page-dropdown" id="pageDropdown">
+				<div class="page-dropdown-header">
+					<span>行程列表</span>
+					<button class="btn-close" onclick="togglePageSelector()">×</button>
+				</div>
+				<div class="page-list" id="pageList">
+					<div class="loading-pages">載入中...</div>
+				</div>
+				<div class="page-dropdown-footer">
+					<button class="btn btn-primary btn-small" onclick="createNewPage()">+ 新增行程</button>
+				</div>
+			</div>
+		</div>
+		
 		<div class="edit-controls">
 			<button class="btn btn-primary" id="editBtn" onclick="toggleEditMode()">編輯模式</button>
 			<button class="btn btn-success" id="saveBtn" onclick="saveItinerary()" style="display: none;">儲存</button>
