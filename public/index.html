@@ -60,7 +60,12 @@
 	<div class="container">
 		<div class="main-content">
 			<div class="timeline-section">
-				<div class="timeline-header">行程時間軸</div>
+				<div class="timeline-header">
+					<span>行程時間軸</span>
+					<button class="btn btn-small btn-outline" id="toggleAllDaysBtn" onclick="toggleAllDays()">
+						<span id="toggleAllDaysText">全部展開</span>
+					</button>
+				</div>
 				<div class="timeline" id="timeline">
 					<!-- 動態載入內容 -->
 					<div class="loading-placeholder" style="padding: 40px; text-align: center; color: #718096;">

@@ -1165,6 +1165,41 @@ function toggleDay(dayId) {
 	}
 }
 
+// 全部展開/關閉所有日期
+function toggleAllDays() {
+	const allContents = document.querySelectorAll('[id^="content-"]');
+	const allHeaders = document.querySelectorAll('.day-header');
+	const toggleBtn = document.getElementById('toggleAllDaysBtn');
+	const toggleText = document.getElementById('toggleAllDaysText');
+	
+	if (allContents.length === 0) return;
+	
+	// 檢查第一個日期的狀態來決定操作
+	const firstContent = allContents[0];
+	const shouldExpand = firstContent.style.display === 'none';
+	
+	allContents.forEach(content => {
+		if (shouldExpand) {
+			content.style.display = 'block';
+		} else {
+			content.style.display = 'none';
+		}
+	});
+	
+	allHeaders.forEach(header => {
+		if (shouldExpand) {
+			header.classList.remove('collapsed');
+		} else {
+			header.classList.add('collapsed');
+		}
+	});
+	
+	// 更新按鈕文字
+	toggleText.textContent = shouldExpand ? '全部關閉' : '全部展開';
+	
+	console.log(shouldExpand ? '✅ 已展開所有日期' : '✅ 已關閉所有日期');
+}
+
 // 添加編輯監聽器
 function addEditableListeners() {
 	// 類型選擇器變更事件
@@ -1509,6 +1544,7 @@ window.itinerary = {
     addNewItem,
     deleteItem,
     toggleDay,
+    toggleAllDays,
     toggleNotes,
     addNote: showAddNoteForm,
     editNote,

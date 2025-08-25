@@ -310,6 +310,9 @@ body {
 	padding: 20px;
 	font-size: 1.2em;
 	font-weight: 600;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
 }
 
 .timeline {
@@ -1399,6 +1402,16 @@ body {
 .btn-small {
 	font-size: 13px;
 	padding: 8px 12px;
+}
+
+.btn-outline {
+	background: transparent;
+	border: 1px solid currentColor;
+	color: inherit;
+}
+
+.btn-outline:hover {
+	background: rgba(255, 255, 255, 0.1);
 }
 
 /* 響應式設計 - 頁面管理選單 */
