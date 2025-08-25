@@ -20,30 +20,28 @@
 	<!-- 連線狀態指示器 (選用) -->
 	<div id="connectionStatus" class="connection-status" style="display: none;"></div>
 	
-	<!-- 頁面頭部 -->
-	<div class="header">
-		<div class="status-indicator" id="statusIndicator">已儲存</div>
-		
-		<!-- 頁面管理選單 -->
-		<div class="page-manager">
-			<button class="page-selector-btn" id="pageSelectorBtn" onclick="togglePageSelector()">
-				<span id="currentPageTitle">載入中...</span>
-				<span class="dropdown-arrow">▼</span>
-			</button>
-			<div class="page-dropdown" id="pageDropdown">
-				<div class="page-dropdown-header">
-					<span>行程列表</span>
-					<button class="btn-close" onclick="togglePageSelector()">×</button>
-				</div>
-				<div class="page-list" id="pageList">
-					<div class="loading-pages">載入中...</div>
-				</div>
-				<div class="page-dropdown-footer">
-					<button class="btn btn-primary btn-small" onclick="createNewPage()">+ 新增行程</button>
-				</div>
+	<!-- 頁面管理選單 -->
+	<div class="page-manager">
+		<button class="page-selector-btn" id="pageSelectorBtn" onclick="togglePageSelector()">
+			<span id="currentPageTitle">載入中...</span>
+			<span class="dropdown-arrow">▶</span>
+		</button>
+		<div class="page-dropdown" id="pageDropdown">
+			<div class="page-dropdown-header">
+				<span>行程列表</span>
+				<button class="btn-close" onclick="togglePageSelector()">×</button>
+			</div>
+			<div class="page-list" id="pageList">
+				<div class="loading-pages">載入中...</div>
+			</div>
+			<div class="page-dropdown-footer">
+				<button class="btn btn-primary btn-small" onclick="createNewPage()">+ 新增行程</button>
 			</div>
 		</div>
-		
+	</div>
+
+	<!-- 頁面頭部 -->
+	<div class="header">
 		<div class="edit-controls">
 			<button class="btn btn-primary" id="editBtn" onclick="toggleEditMode()">編輯模式</button>
 			<button class="btn btn-success" id="saveBtn" onclick="saveItinerary()" style="display: none;">儲存</button>
@@ -54,6 +52,9 @@
 		<h1 id="title">日本關西四國行程</h1>
 		<p id="subtitle">2025年11月22日 - 11月29日 (8天7夜)</p>
 	</div>
+	
+	<!-- 狀態指示器 -->
+	<div class="status-indicator" id="statusIndicator">已儲存</div>
 	
 	<!-- 主要內容區域 - 雙欄布局 -->
 	<div class="container">

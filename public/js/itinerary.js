@@ -291,8 +291,11 @@ function togglePageSelector() {
 
 // 點擊外部關閉頁面選擇器
 function closePageSelectorOnOutsideClick(event) {
+	const pageDropdown = document.getElementById('pageDropdown');
 	const pageManager = document.querySelector('.page-manager');
-	if (!pageManager.contains(event.target)) {
+	
+	// 如果點擊的是抽屜外部區域，關閉抽屜
+	if (!pageDropdown.contains(event.target) && !pageManager.contains(event.target)) {
 		const dropdown = document.getElementById('pageDropdown');
 		const btn = document.getElementById('pageSelectorBtn');
 		

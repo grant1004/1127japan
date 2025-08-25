@@ -254,23 +254,46 @@ body {
 }
 
 .status-indicator {
-	position: absolute;
-	top: 20px;
-	left: 20px;
-	padding: 6px 12px;
+	position: fixed;
+	bottom: 60px;
+	right: 10px;
+	padding: 8px 12px;
 	border-radius: 20px;
 	font-size: 12px;
 	font-weight: 500;
+	z-index: 1000;
+	min-width: 60px;
+	text-align: center;
+	box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+	transition: all 0.2s;
+	background: #22c55e;
+	color: white;
+}
+
+.status-indicator.loading {
+	background: #f59e0b;
+	color: white;
+}
+
+.status-indicator.saving {
+	background: #3b82f6;
+	color: white;
+	animation: pulse 1s infinite;
+}
+
+.status-indicator.error {
+	background: #ef4444;
+	color: white;
 }
 
 .status-saved {
-	background: #c6f6d5;
-	color: #22543d;
+	background: #22c55e;
+	color: white;
 }
 
 .status-saving {
-	background: #fbb6ce;
-	color: #702459;
+	background: #3b82f6;
+	color: white;
 }
 
 .timeline-section {
@@ -1176,9 +1199,9 @@ body {
 /* ===== 頁面管理選單樣式 ===== */
 
 .page-manager {
-	position: absolute;
+	position: fixed;
 	top: 20px;
-	right: 20px;
+	left: 20px;
 	z-index: 1500;
 }
 
@@ -1219,33 +1242,31 @@ body {
 }
 
 .page-selector-btn.active .dropdown-arrow {
-	transform: rotate(180deg);
+	transform: rotate(90deg);
 }
 
 .page-dropdown {
-	position: absolute;
-	top: 100%;
-	right: 0;
+	position: fixed;
+	top: 0;
+	left: 0;
+	height: 100vh;
 	background: white;
-	border-radius: 8px;
-	box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-	border: 1px solid #e2e8f0;
-	min-width: 300px;
-	max-width: 400px;
-	max-height: 500px;
+	border-radius: 0 8px 8px 0;
+	box-shadow: 4px 0 25px rgba(0,0,0,0.15);
+	border-right: 1px solid #e2e8f0;
+	width: 350px;
+	max-width: 90vw;
 	overflow: hidden;
 	z-index: 2000;
-	opacity: 0;
-	transform: translateY(-10px);
-	visibility: hidden;
-	transition: all 0.2s;
-	margin-top: 5px;
+	transform: translateX(-100%);
+	visibility: visible;
+	transition: transform 0.3s ease-in-out;
+	display: flex;
+	flex-direction: column;
 }
 
 .page-dropdown.show {
-	opacity: 1;
-	transform: translateY(0);
-	visibility: visible;
+	transform: translateX(0);
 }
 
 .page-dropdown-header {
@@ -1281,7 +1302,7 @@ body {
 }
 
 .page-list {
-	max-height: 350px;
+	flex: 1;
 	overflow-y: auto;
 	padding: 10px 0;
 }
@@ -1382,25 +1403,24 @@ body {
 
 /* 響應式設計 - 頁面管理選單 */
 @media (max-width: 768px) {
-	.page-manager {
-		position: relative;
-		top: auto;
-		right: auto;
-		width: 100%;
-		margin-bottom: 15px;
+	.page-dropdown {
+		width: 85vw;
+		max-width: 85vw;
+		border-radius: 0;
 	}
 	
 	.page-selector-btn {
-		width: 100%;
-		justify-content: space-between;
-		min-width: auto;
-		max-width: none;
+		min-width: 50px;
+		padding: 8px 12px;
+		font-size: 12px;
 	}
 	
-	.page-dropdown {
-		left: 0;
-		right: 0;
-		min-width: auto;
-		max-width: none;
+	.page-selector-btn #currentPageTitle {
+		display: none;
+	}
+	
+	.dropdown-arrow {
+		margin: 0;
+		font-size: 10px;
 	}
 }
